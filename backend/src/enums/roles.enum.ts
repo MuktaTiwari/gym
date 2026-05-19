@@ -1,0 +1,16 @@
+export enum Roles {
+  SUPER_ADMIN,
+  GYM_OWNER,
+  GYM_ADMIN,
+  TRAINER,
+  MEMBER
+}
+
+export enum Role {
+  SUPER_ADMIN = "SUPER_ADMIN",
+  GYM_OWNER = "GYM_OWNER",
+  GYM_ADMIN = "GYM_ADMIN",
+  TRAINER = "TRAINER",
+  MEMBER = "MEMBER"
+}
+

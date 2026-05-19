@@ -1,0 +1,8 @@
+export enum PlanType {
+  MONTHLY = "MONTHLY",
+  QUARTERLY = "QUARTERLY",
+  SEMI_ANNUAL = "SEMI_ANNUAL",
+  ANNUAL = "ANNUAL",
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY"
+}

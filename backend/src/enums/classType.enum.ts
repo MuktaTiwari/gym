@@ -1,0 +1,10 @@
+export enum ClassType {
+  YOGA = "YOGA",
+  ZUMBA = "ZUMBA",
+  CROSSFIT = "CROSSFIT",
+  PILATES = "PILATES",
+  BOXING = "BOXING",
+  HIIT = "HIIT",
+  SWIMMING = "SWIMMING",
+  SPINNING = "SPINNING"
+}
