@@ -11,6 +11,11 @@ export interface IPlan extends Document {
   isActive: boolean;
   isPopular: boolean;
   features: string[];
+  maxMembers?: number;
+  discountPercentage?: number;
+  accessHours?: string;
+  trainerSessionsIncluded?: number;
+  guestPassesPerMonth?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +61,28 @@ const PlanSchema = new Schema<IPlan>(
     features: {
       type: [String],
       default: [],
+    },
+    maxMembers: {
+      type: Number,
+      default: null,
+    },
+    discountPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    accessHours: {
+      type: String,
+      default: "All Hours",
+    },
+    trainerSessionsIncluded: {
+      type: Number,
+      default: 0,
+    },
+    guestPassesPerMonth: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

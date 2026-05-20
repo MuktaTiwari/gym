@@ -1,6 +1,7 @@
 export type Role = "SUPER_ADMIN" | "GYM_OWNER" | "GYM_ADMIN" | "TRAINER" | "MEMBER";
 
 export interface User {
+  memberProfile: any;
   _id: string;
   name: string;
   email: string;

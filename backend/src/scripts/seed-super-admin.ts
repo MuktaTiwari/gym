@@ -5,7 +5,7 @@ import { env } from "../config/env";
 
 const seedSuperAdmin = async () => {
   try {
-    await mongoose.connect(env.MONGODB_URI);
+    await mongoose.connect(env.MONGODB_URI!);
     console.log("Connected to DB...");
 
     const existingAdmin = await User.findOne({ role: Role.SUPER_ADMIN });

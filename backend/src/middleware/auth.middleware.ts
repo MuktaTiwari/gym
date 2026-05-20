@@ -31,7 +31,7 @@ export const verifyJWT = (req: AuthRequest, res: Response, next: NextFunction) =
       throw new ApiError(401, "Unauthorized: Access token is missing");
     }
 
-    const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET) as {
+    const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET!) as any as {
       _id: string;
       role: string;
       gymId?: string;

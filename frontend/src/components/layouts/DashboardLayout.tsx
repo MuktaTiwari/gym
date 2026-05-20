@@ -11,13 +11,11 @@ import {
   CreditCard,
   TrendingUp,
   Settings,
-  ShieldAlert,
   LogOut,
   Menu,
   X,
   FileText,
-  UserCheck,
-  Award
+  UserCheck
 } from "lucide-react";
 import { logoutApi } from "../../features/auth/authApi";
 
@@ -38,7 +36,6 @@ export const DashboardLayout: React.FC = () => {
     }
   };
 
-  // Define navigation depending on Role
   const getNavItems = () => {
     const role = user?.role;
 
@@ -51,16 +48,16 @@ export const DashboardLayout: React.FC = () => {
     }
 
     if (role === "GYM_OWNER" || role === "GYM_ADMIN") {
-      const items = [
+      return [
         { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
         { label: "Members", path: "/dashboard/members", icon: Users },
+        { label: "Trainers", path: "/dashboard/trainers", icon: Dumbbell },
         { label: "Plans", path: "/dashboard/plans", icon: FileText },
         { label: "Classes", path: "/dashboard/classes", icon: Calendar },
         { label: "Payments", path: "/dashboard/payments", icon: CreditCard },
         { label: "Reports", path: "/dashboard/reports", icon: TrendingUp },
         { label: "Settings", path: "/dashboard/settings", icon: Settings },
       ];
-      return items;
     }
 
     if (role === "TRAINER") {
@@ -98,19 +95,19 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex transition-all duration-300">
+    <div className="h-screen w-screen bg-background text-foreground flex overflow-hidden transition-all duration-300">
       {/* Sidebar: Desktop */}
-      <aside className="hidden lg:flex w-72 bg-surface border-r border-border flex-col justify-between p-6 shrink-0 relative z-30">
+      <aside className="hidden lg:flex h-full w-72 bg-surface border-r border-border flex-col justify-between p-6 shrink-0 relative z-30">
         <div className="flex flex-col gap-8">
           {/* Logo Branding */}
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white shadow-md">
               <Dumbbell className="h-5 w-5" />
             </div>
             <span className="font-extrabold text-2xl tracking-tight bg-gradient-primary bg-clip-text text-transparent">
               FitCore
             </span>
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1.5">
@@ -120,12 +117,17 @@ export const DashboardLayout: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 group ${isActive
-                    ? "text-primary bg-primary/5 border border-primary/15"
-                    : "text-muted hover:text-foreground hover:bg-surface-hover border border-transparent"
-                    }`}
+                  className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 group ${
+                    isActive
+                      ? "text-primary bg-primary/5 border border-primary/15"
+                      : "text-muted hover:text-foreground hover:bg-surface-hover border border-transparent"
+                  }`}
                 >
-                  <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted group-hover:text-foreground"}`} />
+                  <item.icon
+                    className={`h-5 w-5 ${
+                      isActive ? "text-primary" : "text-muted group-hover:text-foreground"
+                    }`}
+                  />
                   <span>{item.label}</span>
                   {isActive && (
                     <motion.div
@@ -148,7 +150,11 @@ export const DashboardLayout: React.FC = () => {
             </div>
             <div className="overflow-hidden">
               <h4 className="font-extrabold text-sm truncate">{user?.name}</h4>
-              <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${getRoleColor(user?.role || "")}`}>
+              <span
+                className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${getRoleColor(
+                  user?.role || ""
+                )}`}
+              >
                 {user?.role.replace("_", " ")}
               </span>
             </div>
@@ -165,7 +171,7 @@ export const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Pane */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Header bar */}
         <header className="h-20 border-b border-border bg-surface/50 backdrop-blur-md sticky top-0 flex items-center justify-between px-6 z-20 transition-all duration-300">
           <div className="flex items-center gap-4">
@@ -185,14 +191,10 @@ export const DashboardLayout: React.FC = () => {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <div className="h-8 w-[1px] bg-border hidden md:block" />
-            
+
             {/* Profile Menu Dropdown */}
             <div className="relative group">
               <button className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-surface-hover transition-colors">
-                <div className="hidden md:flex flex-col items-end">
-                  <span className="text-sm font-extrabold text-foreground">{user?.name}</span>
-                  <span className="text-xs font-medium text-muted capitalize">{user?.role.replace("_", " ").toLowerCase()}</span>
-                </div>
                 <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center text-white font-bold shadow-sm">
                   {user?.name?.charAt(0).toUpperCase()}
                 </div>
@@ -279,10 +281,11 @@ export const DashboardLayout: React.FC = () => {
                         key={item.path}
                         to={item.path}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${isActive
-                          ? "text-primary bg-primary/5 border border-primary/10"
-                          : "text-muted hover:text-foreground hover:bg-surface-hover"
-                          }`}
+                        className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                          isActive
+                            ? "text-primary bg-primary/5 border border-primary/10"
+                            : "text-muted hover:text-foreground hover:bg-surface-hover"
+                        }`}
                       >
                         <item.icon className="h-5 w-5" />
                         <span>{item.label}</span>
@@ -300,14 +303,21 @@ export const DashboardLayout: React.FC = () => {
                   </div>
                   <div className="overflow-hidden">
                     <h4 className="font-extrabold text-sm truncate">{user?.name}</h4>
-                    <span className={`inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${getRoleColor(user?.role || "")}`}>
+                    <span
+                      className={`inline-block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${getRoleColor(
+                        user?.role || ""
+                      )}`}
+                    >
                       {user?.role.replace("_", " ")}
                     </span>
                   </div>
                 </div>
 
                 <button
-                  onClick={handleLogout}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogout();
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-destructive hover:bg-destructive/5 border border-transparent hover:border-destructive/10 transition-all duration-200"
                 >
                   <LogOut className="h-5 w-5" />

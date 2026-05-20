@@ -48,3 +48,13 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
+
+/* Fix input browser autofill background/text color in light and dark modes */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  transition: background-color 50000s ease-in-out 0s;
+  -webkit-box-shadow: 0 0 0px 1000px hsl(var(--surface)) inset !important;
+}

@@ -18,8 +18,11 @@ export class PlansController {
       throw new ApiError(403, "Forbidden");
     }
 
-    const plans = await this.plansService.getPlans(req.user.gymId);
-    return res.status(200).json(new ApiResponse(200, plans, "Plans retrieved successfully"));
+    const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+
+    const result = await this.plansService.getPlans(req.user.gymId, page, limit);
+    return res.status(200).json(new ApiResponse(200, result, "Plans retrieved successfully"));
   });
 
   createPlan = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -75,5 +78,14 @@ export class PlansController {
     }
 
     return res.status(200).json(new ApiResponse(200, {}, "Plan deleted successfully"));
+  });
+
+  getPlanStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user || !req.user.gymId) {
+      throw new ApiError(403, "Forbidden");
+    }
+
+    const stats = await this.plansService.getPlanStats(req.params.id, req.user.gymId);
+    return res.status(200).json(new ApiResponse(200, stats, "Plan stats retrieved successfully"));
   });
 }

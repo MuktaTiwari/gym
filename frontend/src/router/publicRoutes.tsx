@@ -8,12 +8,12 @@ import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
 export const publicRoutes: RouteObject[] = [
   {
     path: "/",
+    element: <Navigate to="/login" replace />,
+  },
+  {
+    path: "/",
     element: <AuthLayout />,
     children: [
-      {
-        path: "",
-        element: <Navigate to="/login" replace />,
-      },
       {
         path: "login",
         element: <LoginPage />,

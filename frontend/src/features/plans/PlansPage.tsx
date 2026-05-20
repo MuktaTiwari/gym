@@ -27,14 +27,20 @@ export const PlansPage: React.FC = () => {
 
   const isAuthorized = user?.role === "GYM_OWNER" || user?.role === "GYM_ADMIN";
 
-  const { data: plans = [], isLoading } = useQuery({
-    queryKey: ["plans"],
+  const [page, setPage] = useState(1);
+  const limit = 3;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["plans", page],
     queryFn: async () => {
-      const response = await axiosInstance.get("/plans");
-      return response.data.data || [];
+      const response = await axiosInstance.get(`/plans?page=${page}&limit=${limit}`);
+      return response.data.data || { docs: [], pagination: { total: 0, page: 1, limit: 6, totalPages: 1 } };
     },
     enabled: isAuthorized,
   });
+
+  const plans = data?.docs || [];
+  const pagination = data?.pagination || { total: 0, page: 1, limit: 6, totalPages: 1 };
 
   const createMutation = useMutation({
     mutationFn: async (newPlan: any) => {
@@ -212,7 +218,7 @@ export const PlansPage: React.FC = () => {
               {/* Features list */}
               <div className="mt-6 space-y-3">
                 <h4 className="text-xs font-extrabold text-muted uppercase tracking-wider">Plan Highlights</h4>
-                <ul className="space-y-2.5">
+                <ul className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-muted">
                   {plan.features?.map((feature: string, idx: number) => (
                     <li key={idx} className="flex items-start gap-2.5 text-xs text-foreground font-medium">
                       <div className="h-4 w-4 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -259,6 +265,48 @@ export const PlansPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Premium Pagination Component */}
+      {pagination.totalPages >= 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-border pt-6 mt-4 gap-4">
+          <span className="text-xs font-semibold text-muted">
+            Showing <span className="text-foreground">{(page - 1) * limit + 1}</span> to{" "}
+            <span className="text-foreground">
+              {Math.min(page * limit, pagination.total)}
+            </span>{" "}
+            of <span className="text-foreground">{pagination.total}</span> entries
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3.5 py-2 text-xs font-bold bg-surface border border-border rounded-xl text-foreground hover:bg-surface-hover transition-colors disabled:opacity-40"
+            >
+              Previous
+            </button>
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-9 h-9 flex items-center justify-center text-xs font-extrabold rounded-xl border transition-all ${
+                  page === p
+                    ? "bg-primary border-primary text-white"
+                    : "bg-surface border-border text-muted hover:text-foreground hover:bg-surface-hover"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+              disabled={page === pagination.totalPages}
+              className="px-3.5 py-2 text-xs font-bold bg-surface border border-border rounded-xl text-foreground hover:bg-surface-hover transition-colors disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit modal */}
       <AnimatePresence>
