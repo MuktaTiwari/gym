@@ -369,24 +369,6 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-8 pb-12">
-      {/* Top Banner Greeting */}
-      {/* <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-6 md:p-8 rounded-2xl bg-gradient-hero text-white relative overflow-hidden shadow-lg"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_120%,rgba(255,255,255,0.15)_0%,transparent_50%)]" />
-        <div className="relative z-10">
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight">
-            Ready to crush your goals, {user?.name}?
-          </h2>
-          <p className="mt-2 text-white/80 text-sm md:text-base font-medium max-w-xl">
-            {isOwner && "Manage your facility, monitor financial performance, and lead your team to success."}
-            {isAdmin && "Keep operations running smoothly: view check-ins, manage members, and organize classes."}
-            {isTrainer && "Check your schedule, guide your students, and log attendance details easily."}
-          </p>
-        </div>
-      </motion.div> */}
 
       {/* Grid: Dynamic Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

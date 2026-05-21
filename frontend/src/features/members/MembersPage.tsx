@@ -133,7 +133,7 @@ export const MembersPage: React.FC = () => {
 
           {/* Premium Pagination Bar */}
           {pagination.totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between border-t border-border pt-6 mt-4 gap-4">
+            <div className="sticky bottom-0 bg-surface/95 backdrop-blur z-10 flex flex-col sm:flex-row items-center justify-between border-t border-border py-4 mt-4 gap-4">
               <span className="text-xs font-semibold text-muted">
                 Showing <span className="text-foreground">{(page - 1) * limit + 1}</span> to{" "}
                 <span className="text-foreground">

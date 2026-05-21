@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -21,6 +22,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
+// Simplified shift pattern — complexity reduced for SonarLint S5843
+const SHIFT_PATTERN = /^([01]?\d):[0-5]\d\s*(AM|PM)\s*-\s*([01]?\d):[0-5]\d\s*(AM|PM)$|^[Oo]ff$/;
+
+const trainerSchema = z.object({
+  fullName: z
+    .string()
+    .min(2, "Full name must be at least 2 characters")
+    .max(80, "Full name must be at most 80 characters")
+    .regex(/^[a-zA-Z\s'-]+$/, "Full name can only contain letters, spaces, hyphens, or apostrophes"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  phone: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || /^[+]?[\d\s\-(]{7,15}$/.test(v),
+      "Phone must be 7–15 digits and may include +, spaces, hyphens, or parentheses"
+    ),
+  specialization: z
+    .string()
+    .min(1, "Please select a specialization"),
+  schedule: z.object({
+    monday:    z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+    tuesday:   z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+    wednesday: z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+    thursday:  z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+    friday:    z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+    saturday:  z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+    sunday:    z.string().regex(SHIFT_PATTERN, 'Use format "HH:MM AM - HH:MM PM" or "Off"'),
+  }),
+});
+
+type TrainerFormData = z.infer<typeof trainerSchema>;
+type FormErrors = Partial<Record<keyof TrainerFormData | `schedule.${string}`, string>>;
+
 const SPECIALIZATIONS = [
   "General Fitness",
   "Bodybuilding",
@@ -40,6 +78,7 @@ export const TrainersPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   // Form State
   const [formData, setFormData] = useState({
@@ -98,6 +137,7 @@ export const TrainersPage: React.FC = () => {
   const resetForm = () => {
     setEditingTrainer(null);
     setErrorMsg("");
+    setFormErrors({});
     setFormData({
       fullName: "",
       email: "",
@@ -150,10 +190,29 @@ export const TrainersPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setFormErrors({});
+
+    const result = trainerSchema.safeParse(formData);
+    if (!result.success) {
+      const mapped: FormErrors = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path.join(".") as keyof FormErrors;
+        if (!mapped[key]) mapped[key] = issue.message;
+      }
+      setFormErrors(mapped);
+      return;
+    }
+
+    const validated: TrainerFormData = result.data;
+    // Strip undefined optionals so the payload matches the required API shape
+    const payload = Object.fromEntries(
+      Object.entries(validated).filter(([, v]) => v !== undefined)
+    ) as Omit<typeof validated, "phone"> & { phone?: string };
+
     if (editingTrainer) {
-      updateMutation.mutate({ id: editingTrainer._id, data: formData });
+      updateMutation.mutate({ id: editingTrainer._id, data: payload });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload as Parameters<typeof createMutation.mutate>[0]);
     }
   };
 
@@ -367,12 +426,19 @@ export const TrainersPage: React.FC = () => {
                     <Label htmlFor="fullName" className="text-xs font-semibold text-muted">Full Name</Label>
                     <Input
                       id="fullName"
-                      required
                       placeholder="e.g. John Doe"
                       value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="mt-2 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400"
+                      onChange={(e) => {
+                        setFormData({ ...formData, fullName: e.target.value });
+                        setFormErrors((prev) => ({ ...prev, fullName: undefined }));
+                      }}
+                      className={`mt-2 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400 ${
+                        formErrors.fullName ? "border-destructive focus-visible:ring-destructive" : ""
+                      }`}
                     />
+                    {formErrors.fullName && (
+                      <p className="mt-1 text-[11px] text-destructive font-medium">{formErrors.fullName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -380,23 +446,38 @@ export const TrainersPage: React.FC = () => {
                     <Input
                       id="email"
                       type="email"
-                      required
                       placeholder="e.g. john@fitcore.com"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="mt-2 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400"
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        setFormErrors((prev) => ({ ...prev, email: undefined }));
+                      }}
+                      className={`mt-2 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400 ${
+                        formErrors.email ? "border-destructive focus-visible:ring-destructive" : ""
+                      }`}
                     />
+                    {formErrors.email && (
+                      <p className="mt-1 text-[11px] text-destructive font-medium">{formErrors.email}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label htmlFor="phone" className="text-xs font-semibold text-muted">Phone Number</Label>
                     <Input
                       id="phone"
-                      placeholder="e.g. +1 555-0199"
+                      placeholder="e.g. +91 98765 43210"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="mt-2 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400"
+                      onChange={(e) => {
+                        setFormData({ ...formData, phone: e.target.value });
+                        setFormErrors((prev) => ({ ...prev, phone: undefined }));
+                      }}
+                      className={`mt-2 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400 ${
+                        formErrors.phone ? "border-destructive focus-visible:ring-destructive" : ""
+                      }`}
                     />
+                    {formErrors.phone && (
+                      <p className="mt-1 text-[11px] text-destructive font-medium">{formErrors.phone}</p>
+                    )}
                   </div>
 
                   <div>
@@ -404,8 +485,13 @@ export const TrainersPage: React.FC = () => {
                     <select
                       id="specialization"
                       value={formData.specialization}
-                      onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                      className="mt-2 flex h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-700 transition-all cursor-pointer"
+                      onChange={(e) => {
+                        setFormData({ ...formData, specialization: e.target.value });
+                        setFormErrors((prev) => ({ ...prev, specialization: undefined }));
+                      }}
+                      className={`mt-2 flex h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-700 transition-all cursor-pointer ${
+                        formErrors.specialization ? "border-destructive" : ""
+                      }`}
                     >
                       {SPECIALIZATIONS.map((spec) => (
                         <option key={spec} value={spec} className="bg-white dark:bg-zinc-950">
@@ -413,6 +499,9 @@ export const TrainersPage: React.FC = () => {
                         </option>
                       ))}
                     </select>
+                    {formErrors.specialization && (
+                      <p className="mt-1 text-[11px] text-destructive font-medium">{formErrors.specialization}</p>
+                    )}
                   </div>
                 </div>
 
@@ -427,26 +516,37 @@ export const TrainersPage: React.FC = () => {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {scheduleDays.map((day) => (
-                      <div key={day} className="flex items-center justify-between gap-3">
-                        <Label htmlFor={`schedule-${day}`} className="capitalize text-xs font-semibold min-w-[70px] shrink-0 text-muted">
-                          {day}
-                        </Label>
-                        <Input
-                          id={`schedule-${day}`}
-                          placeholder="e.g. 09:00 AM - 05:00 PM"
-                          value={formData.schedule[day]}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            schedule: {
-                              ...formData.schedule,
-                              [day]: e.target.value
-                            }
-                          })}
-                          className="h-10 text-xs py-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400"
-                        />
-                      </div>
-                    ))}
+                    {scheduleDays.map((day) => {
+                      const scheduleKey = `schedule.${day}` as keyof FormErrors;
+                      const dayError = formErrors[scheduleKey];
+                      return (
+                        <div key={day}>
+                          <div className="flex items-center justify-between gap-3">
+                            <Label htmlFor={`schedule-${day}`} className="capitalize text-xs font-semibold min-w-[70px] shrink-0 text-muted">
+                              {day}
+                            </Label>
+                            <Input
+                              id={`schedule-${day}`}
+                              placeholder="e.g. 09:00 AM - 05:00 PM or Off"
+                              value={formData.schedule[day]}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  schedule: { ...formData.schedule, [day]: e.target.value }
+                                });
+                                setFormErrors((prev) => ({ ...prev, [scheduleKey]: undefined }));
+                              }}
+                              className={`h-10 text-xs py-1 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-zinc-400 ${
+                                dayError ? "border-destructive focus-visible:ring-destructive" : ""
+                              }`}
+                            />
+                          </div>
+                          {dayError && (
+                            <p className="mt-1 text-[11px] text-destructive font-medium text-right">{dayError}</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

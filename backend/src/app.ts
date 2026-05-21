@@ -2,11 +2,13 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "node:path";
 import { corsOptions } from "./config/corsOptions";
 import { errorHandler } from "./middleware/error.middleware";
 import authRoutes from "./features/auth/auth.routes";
 import membersRoutes from "./features/members/members.routes";
 import plansRoutes from "./features/plans/plans.routes";
+import gymRoutes from "./features/gyms/gym.routes";
 
 const app = express();
 
@@ -20,6 +22,10 @@ app.use(morgan("dev"));
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/members", membersRoutes);
 app.use("/api/v1/plans", plansRoutes);
+app.use("/api/v1/gym", gymRoutes);
+
+// Serve uploaded logos
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Health check endpoint
 app.get("/health", (req, res) => {
