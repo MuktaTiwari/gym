@@ -1,21 +1,20 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Dumbbell, ArrowRight, Loader2, AlertCircle, Sparkles, Building, UserCheck } from "lucide-react";
-import { useAuthStore } from "../../store/authStore";
-import { registerApi } from "./authApi";
+import { motion } from "framer-motion";
+import { AlertCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { FloatingInput } from "../../components/ui/FloatingInput";
+import { registerApi } from "./authApi";
+import toast from "react-hot-toast";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.literal("GYM_OWNER").default("GYM_OWNER"),
-  gymName: z.string().min(2, "Gym or facility name is required"),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -36,15 +35,18 @@ export const RegisterPage: React.FC = () => {
       email: "",
       password: "",
       role: "GYM_OWNER",
-      gymName: "",
     },
   });
 
   const mutation = useMutation({
     mutationFn: registerApi,
+
     onSuccess: (data) => {
-      // Redirect to login with success state
-      navigate("/login", { state: { registered: true, email: getValues("email") } });
+      toast.success("Successfully registered Super Admin!");
+      setTimeout(() => {
+        // Redirect to login with success state
+        navigate("/login", { state: { registered: true, email: getValues("email") } });
+      }, 1000);
     },
     onError: (error: any) => {
       const msg = error.response?.data?.message || "Registration failed. Please check your inputs.";
@@ -82,10 +84,10 @@ export const RegisterPage: React.FC = () => {
     >
       <motion.div variants={itemVariants} className="text-center">
         <h2 className="text-3xl font-extrabold tracking-tight flex items-center justify-center gap-2">
-          Get started <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+          Platform Setup <Sparkles className="h-6 w-6 text-primary animate-pulse" />
         </h2>
         <p className="text-muted mt-2 font-medium">
-          Register your gym and create an owner account to start.
+          Register the master Super Admin account to get started.
         </p>
       </motion.div>
 
@@ -131,15 +133,6 @@ export const RegisterPage: React.FC = () => {
           />
         </motion.div>
 
-        {/* Gym Name Field */}
-        <motion.div variants={itemVariants}>
-          <FloatingInput
-            label="Gym or Facility Name"
-            error={errors.gymName?.message}
-            {...register("gymName")}
-          />
-        </motion.div>
-
         <motion.div variants={itemVariants} className="mt-3">
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -151,11 +144,11 @@ export const RegisterPage: React.FC = () => {
             {mutation.isPending ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Registering gym...
+                Registering...
               </>
             ) : (
               <>
-                Register Gym & Owner
+                Register Super Admin
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

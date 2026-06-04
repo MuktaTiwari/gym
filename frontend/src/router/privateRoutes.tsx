@@ -1,7 +1,9 @@
 import type { RouteObject } from "react-router-dom";
 import { DashboardLayout } from "../components/layouts/DashboardLayout";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
-import { SuperAdminDashboard } from "../features/super-admin/SuperAdminDashboard";
+import { SuperAdminOverview } from "../features/super-admin/SuperAdminOverview";
+import { SuperAdminManageGyms } from "../features/super-admin/SuperAdminManageGyms";
+import { SuperAdminSettings } from "../features/super-admin/SuperAdminSettings";
 import { ProtectedRoute } from "../components/shared/ProtectedRoute";
 
 // Import our interactive FitCore feature sub-pages
@@ -69,15 +71,15 @@ export const privateRoutes: RouteObject[] = [
     children: [
       {
         path: "",
-        element: <SuperAdminDashboard />,
+        element: <SuperAdminOverview />,
       },
       {
         path: "gyms",
-        element: <SuperAdminDashboard />,
+        element: <SuperAdminManageGyms />,
       },
       {
         path: "settings",
-        element: <SuperAdminDashboard />,
+        element: <SuperAdminSettings />,
       },
     ],
   },

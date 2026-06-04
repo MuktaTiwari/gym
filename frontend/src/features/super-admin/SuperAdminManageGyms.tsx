@@ -1,81 +1,46 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Building,
-  Users,
-  Activity,
-  CreditCard,
-  Plus,
-  ShieldCheck,
-  Search,
-  CheckCircle,
-  AlertTriangle,
-  Lock
-} from "lucide-react";
+import { Search, Plus, CheckCircle, AlertTriangle, Lock, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getDashboardDataApi, suspendGymApi } from "./superAdminApi";
+import { Button } from "../../components/ui/button";
+import { AddGymModal } from "./AddGymModal";
+import { EditGymModal } from "./EditGymModal";
+import { ConfirmSuspendModal } from "./ConfirmSuspendModal";
 
-export const SuperAdminDashboard: React.FC = () => {
+export const SuperAdminManageGyms: React.FC = () => {
   const [search, setSearch] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedGym, setSelectedGym] = useState<any>(null);
+  const [gymToSuspend, setGymToSuspend] = useState<any>(null);
 
-  const platformStats = [
-    { label: "Total Gyms Registered", value: "24", icon: Building, color: "text-primary bg-primary/10" },
-    { label: "Platform Members", value: "8,924", icon: Users, color: "text-accent bg-accent/10" },
-    { label: "System Uptime", value: "99.98%", icon: Activity, color: "text-indigo-500 bg-indigo-500/10" },
-    { label: "MRR Platform-wide", value: "$4,800", icon: CreditCard, color: "text-emerald-400 bg-emerald-500/10" },
-  ];
+  const queryClient = useQueryClient();
 
-  const gymsData = [
-    { id: "1", name: "Iron Paradise Gym", owner: "Dwayne Johnson", email: "dwayne@paradise.com", members: 420, plan: "Enterprise", status: "ACTIVE" },
-    { id: "2", name: "Apex Fitness Studio", owner: "Sarah Connor", email: "sarah@apex.com", members: 184, plan: "Growth", status: "ACTIVE" },
-    { id: "3", name: "Elite Powerlifting Club", owner: "Ed Coan", email: "ed@elite.com", members: 92, plan: "Basic", status: "OVERDUE" },
-    { id: "4", name: "Gold's Strength Lab", owner: "Arnold S.", email: "arnold@golds.com", members: 310, plan: "Enterprise", status: "SUSPENDED" },
-  ];
+  const { data, isLoading } = useQuery({
+    queryKey: ["super-admin-dashboard"],
+    queryFn: getDashboardDataApi,
+  });
 
-  const filteredGyms = gymsData.filter((g) =>
+  const dashboardData = data?.data;
+  const gymsData = dashboardData?.gyms || [];
+
+  const filteredGyms = gymsData.filter((g: any) =>
     g.name.toLowerCase().includes(search.toLowerCase()) ||
     g.owner.toLowerCase().includes(search.toLowerCase())
   );
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
-      {/* Welcome Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-6 rounded-2xl bg-surface border border-border flex items-center justify-between shadow-sm"
-      >
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center text-white">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black tracking-tight">Super Administration Panel</h2>
-            <p className="text-xs text-muted font-semibold mt-1">Platform management, tenant isolation, and billing analytics.</p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {platformStats.map((stat, idx) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            className="p-5 rounded-2xl bg-surface border border-border flex items-center gap-4 shadow-sm"
-          >
-            <div className={`h-12 w-12 rounded-xl flex items-center justify-center border border-border shrink-0 ${stat.color}`}>
-              <stat.icon className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wider">{stat.label}</p>
-              <h3 className="text-xl font-black tracking-tight mt-1">{stat.value}</h3>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Tenant List Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,7 +53,6 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Search Input */}
             <div className="relative flex-1 md:flex-initial">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
               <input
@@ -99,15 +63,16 @@ export const SuperAdminDashboard: React.FC = () => {
                 className="w-full md:w-64 pl-10 pr-4 py-2 text-xs rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
-            {/* Create Tenant Button */}
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-primary text-white font-extrabold text-xs shadow-sm hover:shadow transition-shadow">
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-gradient-primary text-white font-extrabold text-xs shadow-sm hover:shadow transition-shadow"
+            >
               <Plus className="h-4 w-4" />
               <span>Add Gym</span>
-            </button>
+            </Button>
           </div>
         </div>
 
-        {/* Custom Responsive Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -121,7 +86,7 @@ export const SuperAdminDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60 text-xs">
-              {filteredGyms.map((gym) => (
+              {filteredGyms.map((gym: any) => (
                 <tr key={gym.id} className="hover:bg-surface-hover/40 transition-colors">
                   <td className="py-4 pl-2 font-extrabold text-sm">{gym.name}</td>
                   <td className="py-4">
@@ -156,20 +121,45 @@ export const SuperAdminDashboard: React.FC = () => {
                   </td>
                   <td className="py-4 text-right pr-2">
                     <div className="flex justify-end gap-2">
-                      <button className="text-[10px] font-extrabold text-primary hover:text-primary-dark transition-colors">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedGym(gym);
+                          setIsEditModalOpen(true);
+                        }}
+                        className="text-[10px] font-extrabold text-primary hover:text-primary-dark transition-colors"
+                      >
                         Edit
-                      </button>
-                      <button className="text-[10px] font-extrabold text-destructive hover:opacity-80 transition-opacity">
-                        Suspend
-                      </button>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setGymToSuspend(gym);
+                          setIsConfirmModalOpen(true);
+                        }}
+                        className={`text-[10px] font-extrabold transition-opacity ${gym.status === "SUSPENDED" ? "text-emerald-500 hover:text-emerald-600" : "text-destructive hover:opacity-80"}`}
+                      >
+                        {gym.status === "SUSPENDED" ? "Activate" : "Suspend"}
+                      </Button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {filteredGyms.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-muted">No gyms found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </motion.div>
+
+      <AddGymModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <EditGymModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} gymData={selectedGym} />
+      <ConfirmSuspendModal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} gymData={gymToSuspend} />
     </div>
   );
 };

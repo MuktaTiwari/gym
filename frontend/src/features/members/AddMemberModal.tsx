@@ -64,7 +64,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
   });
 
   const plans = data?.docs || [];
-  const trainersList = trainersData || [];
+  const trainersList = trainersData || []; 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
