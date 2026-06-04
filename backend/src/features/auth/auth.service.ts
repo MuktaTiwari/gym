@@ -5,6 +5,9 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env";
 import { AuthRepository } from "./auth.repository";
 import { Member } from "../../models/member.model";
+import { User } from "../../models/user.model";
+import { GymStaff } from "../../models/gymStaff.model";
+import mongoose from "mongoose";
 
 export class AuthService {
   private readonly authRepository: AuthRepository;
@@ -13,43 +16,40 @@ export class AuthService {
     this.authRepository = new AuthRepository();
   }
 
-  async register(data: {
-    name: string;
-    email: string;
-    password?: string;
-    role: Role;
-    gymName?: string;
-  }) {
-    if (data.role !== Role.GYM_OWNER) {
-      throw new ApiError(400, "Only Gym Owners can register an account. Members must be added by their gym administrator.");
-    }
-
-    if (!data.gymName || data.gymName.trim() === "") {
-      throw new ApiError(400, "Gym or facility name is required");
-    }
-
+  async register(
+    data: { name: string; email: string; password?: string; role: Role; gymName?: string; gymId?: string },
+    creator?: { _id: string; role: string; gymId?: string }
+  ) {
     const existingUser = await this.authRepository.findUserByEmail(data.email.toLowerCase());
     if (existingUser) {
       throw new ApiError(400, "User with this email already exists");
     }
 
-    // Also verify no member exists with this email to avoid duplicate credentials
-    const existingMember = await Member.findOne({ email: data.email.toLowerCase() });
-    if (existingMember) {
-      throw new ApiError(400, "A member with this email already exists");
+    if (data.role === Role.SUPER_ADMIN) {
+      throw new ApiError(403, "Cannot register Super Admin via public API. Please use the seed script.");
     }
 
-    let gymId;
-    const gym = await this.authRepository.createGym(data.gymName);
-    gymId = String(gym._id);
-
-    const user = await this.authRepository.createUser({
+    const user = new User({
       name: data.name,
       email: data.email.toLowerCase(),
       password: data.password,
       role: data.role,
-      gymId,
+      gymId: data.gymId || null,
     });
+    
+    await user.save();
+
+    if (data.role === Role.GYM_OWNER && data.gymName) {
+      const Gym = mongoose.model("Gym");
+      const gym = new Gym({
+        name: data.gymName,
+        ownerId: user._id,
+      });
+      await gym.save();
+      
+      user.gymId = gym._id as any;
+      await user.save();
+    }
 
     const userResponse = await this.authRepository.findUserByIdWithoutSecrets(String(user._id));
     return userResponse;

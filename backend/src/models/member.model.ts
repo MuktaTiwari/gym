@@ -54,7 +54,6 @@ const MemberSchema = new Schema<IMember>(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -149,6 +148,9 @@ const MemberSchema = new Schema<IMember>(
     toObject: { virtuals: true }
   }
 );
+
+// Allow the same person to be a member of different gyms, but unique within one gym
+MemberSchema.index({ email: 1, gymId: 1 }, { unique: true });
 
 MemberSchema.virtual("paymentHistory", {
   ref: "Payment",

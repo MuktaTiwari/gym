@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { ApiError } from "../../utils/ApiError";
 import { env } from "../../config/env";
+import jwt from "jsonwebtoken";
 
 const cookieOptions = {
   httpOnly: true,
@@ -31,7 +32,7 @@ export class AuthController {
     this.authService = new AuthService();
   }
 
-  register = asyncHandler(async (req: Request, res: Response) => {
+  register = asyncHandler(async (req: Request, res: Response) => { 
     const user = await this.authService.register(req.body);
     return res
       .status(201)
@@ -42,9 +43,22 @@ export class AuthController {
     const { email, password } = req.body;
     const { user, accessToken, refreshToken } = await this.authService.login(email, password);
 
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000, // 15 mins
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     return res
       .status(200)
-      .cookie("refreshToken", refreshToken, cookieOptions)
       .json(
         new ApiResponse(
           200,

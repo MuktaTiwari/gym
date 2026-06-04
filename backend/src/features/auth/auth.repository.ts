@@ -15,8 +15,8 @@ export class AuthRepository {
     return await User.findById(userId).select("-password -refreshToken");
   }
 
-  async createGym(gymName: string) {
-    return await Gym.create({ name: gymName });
+  async createGym(gymName: string, ownerId: string) {
+    return await Gym.create({ name: gymName, ownerId });
   }
 
   async createUser(data: {

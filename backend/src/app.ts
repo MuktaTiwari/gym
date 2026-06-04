@@ -9,6 +9,7 @@ import authRoutes from "./features/auth/auth.routes";
 import membersRoutes from "./features/members/members.routes";
 import plansRoutes from "./features/plans/plans.routes";
 import gymRoutes from "./features/gyms/gym.routes";
+import superAdminRoutes from "./features/super-admin/superAdmin.routes";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/members", membersRoutes);
 app.use("/api/v1/plans", plansRoutes);
 app.use("/api/v1/gym", gymRoutes);
+app.use("/api/v1/super-admin", superAdminRoutes);
 
 // Serve uploaded logos
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

@@ -13,6 +13,7 @@ import { Notification } from "../../models/notification.model";
 import { Attendance } from "../../models/attendance.model";
 import { TrainerChangeRequest } from "../../models/trainerChangeRequest.model";
 import bcrypt from "bcrypt";
+import { sendEmail } from "../../utils/email";
 
 export class MembersService {
   private membersRepository: MembersRepository;
@@ -117,6 +118,23 @@ export class MembersService {
       throw new ApiError(500, "Failed to retrieve complete member profile");
     }
     
+    // Send welcome email to the new member
+    await sendEmail({
+      to: emailLower,
+      subject: "Welcome to FitCore - Your Account Details",
+      text: `Hello ${name},\n\nWelcome to FitCore! Your account has been created successfully.\n\nHere are your login details:\nEmail: ${emailLower}\nPassword: ${plainPassword}\n\nPlease login and change your password as soon as possible.\n\nBest regards,\nFitCore Team`,
+      html: `<p>Hello <strong>${name}</strong>,</p>
+             <p>Welcome to FitCore! Your account has been created successfully.</p>
+             <p>Here are your login details:</p>
+             <ul>
+               <li><strong>Email:</strong> ${emailLower}</li>
+               <li><strong>Password:</strong> ${plainPassword}</li>
+             </ul>
+             <p>Please login and change your password as soon as possible.</p>
+             <br/>
+             <p>Best regards,<br/>FitCore Team</p>`
+    });
+
     return completedMember;
   }
 
@@ -579,10 +597,12 @@ export class MembersService {
 
   async createTrainer(gymId: string, trainerData: any) {
     const trainerId = "TRN-" + Math.floor(100000 + Math.random() * 900000);
-    return await Trainer.create({
+    const trainerEmail = trainerData.email.toLowerCase();
+    
+    const trainer = await Trainer.create({
       trainerId,
       fullName: trainerData.fullName,
-      email: trainerData.email.toLowerCase(),
+      email: trainerEmail,
       phone: trainerData.phone,
       photo: trainerData.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(trainerData.fullName)}`,
       specialization: trainerData.specialization,
@@ -590,6 +610,20 @@ export class MembersService {
       gymId,
       assignedMembers: [],
     });
+
+    // Note: Assuming trainers use a default password or you have a different mechanism to generate their passwords,
+    // if there is a password field we should send it. We'll send a generic welcome email.
+    await sendEmail({
+      to: trainerEmail,
+      subject: "Welcome to FitCore - You've been added as a Trainer",
+      text: `Hello ${trainerData.fullName},\n\nYou have been added as a trainer at FitCore. Welcome to the team!\n\nBest regards,\nFitCore Team`,
+      html: `<p>Hello <strong>${trainerData.fullName}</strong>,</p>
+             <p>You have been added as a trainer at FitCore. Welcome to the team!</p>
+             <br/>
+             <p>Best regards,<br/>FitCore Team</p>`
+    });
+
+    return trainer;
   }
 
   async updateTrainer(trainerId: string, gymId: string, updateData: any) {

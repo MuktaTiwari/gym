@@ -8,14 +8,18 @@ export const registerSchema = z.object({
     password: z.string({ required_error: "Password is required" }).min(6, "Password must be at least 6 characters"),
     role: z.nativeEnum(Role, { required_error: "Role is required" }),
     gymName: z.string().optional(),
+    gymId: z.string().optional(),
   }).refine((data) => {
     if (data.role === Role.GYM_OWNER && !data.gymName) {
       return false;
     }
+    if ((data.role === Role.GYM_ADMIN || data.role === Role.TRAINER) && !data.gymId) {
+      return false;
+    }
     return true;
   }, {
-    message: "Gym name is required when registering as a gym owner",
-    path: ["gymName"]
+    message: "Missing gymName for GYM_OWNER or missing gymId for GYM_ADMIN/TRAINER",
+    path: ["role"]
   })
 });
 

@@ -8,6 +8,7 @@ export interface IGymSettings {
 
 export interface IGym extends Document {
   name: string;
+  ownerId: mongoose.Types.ObjectId;
   address?: string;
   city?: string;
   country?: string;
@@ -15,6 +16,8 @@ export interface IGym extends Document {
   email?: string;
   logo?: string;
   settings?: IGymSettings;
+  status: "ACTIVE" | "OVERDUE" | "SUSPENDED";
+  plan: "Standard" | "Premium" | "Enterprise";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +25,7 @@ export interface IGym extends Document {
 const GymSchema: Schema = new Schema(
   {
     name: { type: String, required: true, trim: true },
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     address: { type: String, trim: true },
     city: { type: String, trim: true },
     country: { type: String, trim: true },
@@ -33,6 +37,8 @@ const GymSchema: Schema = new Schema(
       primaryColor: { type: String },
       fontStyle: { type: String, enum: ["default", "modern", "classic"], default: "default" },
     },
+    status: { type: String, enum: ["ACTIVE", "OVERDUE", "SUSPENDED"], default: "ACTIVE" },
+    plan: { type: String, enum: ["Standard", "Premium", "Enterprise"], default: "Standard" }
   },
   { timestamps: true }
 );
