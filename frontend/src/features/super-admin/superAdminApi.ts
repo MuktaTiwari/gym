@@ -5,7 +5,7 @@ export const getDashboardDataApi = async () => {
   return response.data;
 };
 
-export const addGymApi = async (data: { name: string; ownerName: string; ownerEmail: string; password?: string }) => {
+export const addGymApi = async (data: { name: string; ownerName: string; ownerEmail: string }) => {
   const response = await axiosInstance.post("/super-admin/gyms", data);
   return response.data;
 };

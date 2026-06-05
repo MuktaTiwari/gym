@@ -8,6 +8,8 @@ import { ProtectedRoute } from "../components/shared/ProtectedRoute";
 
 // Import our interactive FitCore feature sub-pages
 import { MembersPage } from "../features/members/MembersPage";
+import { AddMemberPage } from "../features/members/AddMemberPage";
+import { MemberProfilePage } from "../features/members/MemberProfilePage";
 import { TrainersPage } from "../features/trainers/TrainersPage";
 import { PlansPage } from "../features/plans/PlansPage";
 import { PaymentsPage } from "../features/payments/PaymentsPage";
@@ -30,6 +32,18 @@ export const privateRoutes: RouteObject[] = [
       {
         path: "members",
         element: <MembersPage />,
+      },
+      {
+        path: "members/new",
+        element: <AddMemberPage />,
+      },
+      {
+        path: "members/:id",
+        element: <MemberProfilePage />,
+      },
+      {
+        path: "members/:id/edit",
+        element: <AddMemberPage />,
       },
       {
         path: "trainers",

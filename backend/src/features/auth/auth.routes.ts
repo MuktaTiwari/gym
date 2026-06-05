@@ -13,5 +13,6 @@ router.post("/login", validate(loginSchema), authcontroller.login);
 router.post("/refresh", authcontroller.refresh);
 router.post("/logout", verifyJWT as any, authcontroller.logout as any);
 router.get("/me", verifyJWT as any, authcontroller.getMe as any);
+router.post("/set-password", authcontroller.setPassword as any);
 
 export default router;

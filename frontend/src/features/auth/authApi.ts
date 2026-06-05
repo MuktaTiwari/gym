@@ -19,3 +19,8 @@ export const getMeApi = async () => {
   const response = await axiosInstance.get("/auth/me");
   return response.data;
 };
+
+export const setPasswordApi = async (data: { token: string; password: string }) => {
+  const response = await axiosInstance.post("/auth/set-password", data);
+  return response.data;
+};

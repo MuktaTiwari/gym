@@ -4,6 +4,7 @@ import { AuthLayout } from "../components/layouts/AuthLayout";
 import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
+import { SetPasswordPage } from "../features/auth/SetPasswordPage";
 
 export const publicRoutes: RouteObject[] = [
   {
@@ -25,6 +26,10 @@ export const publicRoutes: RouteObject[] = [
       {
         path: "forgot-password",
         element: <ForgotPasswordPage />,
+      },
+      {
+        path: "set-password",
+        element: <SetPasswordPage />,
       },
     ],
   },

@@ -8,6 +8,7 @@ import { Member } from "../../models/member.model";
 import { User } from "../../models/user.model";
 import { GymStaff } from "../../models/gymStaff.model";
 import mongoose from "mongoose";
+import { sendWelcomeEmail } from "../../utils/email";
 
 export class AuthService {
   private readonly authRepository: AuthRepository;
@@ -24,11 +25,7 @@ export class AuthService {
     if (existingUser) {
       throw new ApiError(400, "User with this email already exists");
     }
-
-    if (data.role === Role.SUPER_ADMIN) {
-      throw new ApiError(403, "Cannot register Super Admin via public API. Please use the seed script.");
-    }
-
+    
     const user = new User({
       name: data.name,
       email: data.email.toLowerCase(),
@@ -50,6 +47,13 @@ export class AuthService {
       user.gymId = gym._id as any;
       await user.save();
     }
+
+    // Send email notification
+    sendWelcomeEmail({
+      email: user.email,
+      name: user.name,
+      role: user.role
+    });
 
     const userResponse = await this.authRepository.findUserByIdWithoutSecrets(String(user._id));
     return userResponse;
@@ -198,6 +202,30 @@ export class AuthService {
         { $unset: { refreshToken: 1 } },
         { new: true }
       );
+    }
+  }
+
+  async setPassword(token: string, password: string) {
+    try {
+      const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET!) as any as { _id: string, isMember: boolean };
+      
+      if (decoded.isMember) {
+        const member = await Member.findById(decoded._id);
+        if (!member) throw new ApiError(404, "Member not found");
+        member.password = password;
+        await member.save();
+      } else {
+        const user = await this.authRepository.findUserById(decoded._id);
+        if (!user) throw new ApiError(404, "User not found");
+        user.password = password;
+        await user.save();
+      }
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        throw new ApiError(400, "Setup link has expired. Please ask your administrator to resend it.");
+      }
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(400, "Invalid setup link.");
     }
   }
 }

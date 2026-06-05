@@ -5,6 +5,9 @@ import { Member } from "../../models/member.model";
 import { User } from "../../models/user.model";
 import { Role } from "../../enums/roles.enum";
 import mongoose from "mongoose";
+import { sendWelcomeEmail } from "../../utils/email";
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env";
 
 export class SuperAdminController {
   getDashboardData = asyncHandler(async (req: Request, res: Response) => {
@@ -56,9 +59,12 @@ export class SuperAdminController {
   addGym = asyncHandler(async (req: Request, res: Response) => {
     const { name, ownerName, ownerEmail, password } = req.body;
 
-    if (!name || !ownerName || !ownerEmail || !password) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+    if (!name || !ownerName || !ownerEmail) {
+      return res.status(400).json({ success: false, message: "Gym name, owner name, and owner email are required" });
     }
+
+    // Generate a secure random password if not provided (they will reset it anyway)
+    const initialPassword = password || Math.random().toString(36).slice(-10) + "A1!";
 
     // Check if user exists
     const existingUser = await User.findOne({ email: ownerEmail.toLowerCase() });
@@ -82,11 +88,27 @@ export class SuperAdminController {
       _id: userId,
       name: ownerName,
       email: ownerEmail.toLowerCase(),
-      password,
+      password: initialPassword,
       role: Role.GYM_OWNER,
       gymId: gym._id,
     });
     await user.save();
+
+    // Generate setup token
+    const setupToken = jwt.sign(
+      { _id: user._id, isMember: false }, 
+      env.ACCESS_TOKEN_SECRET!, 
+      { expiresIn: '7d' }
+    );
+
+    // Send email notification
+    sendWelcomeEmail({
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      contextMessage: `for ${gym.name}`,
+      setupToken
+    });
 
     return res.status(201).json({
       success: true,

@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  mailhog:
+    image: mailhog/mailhog
+    container_name: fitcore-mailhog
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI

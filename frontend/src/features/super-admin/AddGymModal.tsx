@@ -14,7 +14,6 @@ export const AddGymModal: React.FC<AddGymModalProps> = ({ isOpen, onClose }) => 
   const [name, setName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -28,7 +27,6 @@ export const AddGymModal: React.FC<AddGymModalProps> = ({ isOpen, onClose }) => 
       setName("");
       setOwnerName("");
       setOwnerEmail("");
-      setPassword("");
     },
     onError: (error: any) => {
       const msg = error.response?.data?.message || "Failed to create Gym.";
@@ -60,7 +58,7 @@ export const AddGymModal: React.FC<AddGymModalProps> = ({ isOpen, onClose }) => 
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              mutation.mutate({ name, ownerName, ownerEmail, password });
+              mutation.mutate({ name, ownerName, ownerEmail });
             }}
             className="p-6 space-y-4"
           >
@@ -109,21 +107,7 @@ export const AddGymModal: React.FC<AddGymModalProps> = ({ isOpen, onClose }) => 
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Owner Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-background border border-input rounded-xl py-2 pl-9 pr-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  placeholder="Minimum 6 characters"
-                />
-              </div>
-            </div>
+
 
             <div className="pt-4 flex gap-3">
               <button

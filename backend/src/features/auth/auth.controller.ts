@@ -117,4 +117,17 @@ export class AuthController {
       .status(200)
       .json(new ApiResponse(200, { user, accessToken: req.header("Authorization")?.replace("Bearer ", "") }, "User details fetched successfully"));
   });
+
+  setPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      throw new ApiError(400, "Token and new password are required");
+    }
+
+    await this.authService.setPassword(token, password);
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Password set successfully"));
+  });
 }

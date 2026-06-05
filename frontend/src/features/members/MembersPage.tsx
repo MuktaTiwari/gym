@@ -1,19 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { Users, Loader2, UserPlus } from "lucide-react";
 import { axiosInstance } from "../../lib/axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../components/ui/button";
-import { AddMemberModal } from "./AddMemberModal";
-import { EditMemberModal } from "./EditMemberModal";
 import { MemberTable } from "./MemberTable";
-import { MemberDrawer } from "./MemberDrawer";
 
 export const MembersPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<any | null>(null);
-  const [editingMember, setEditingMember] = useState<any | null>(null);
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -33,7 +29,7 @@ export const MembersPage: React.FC = () => {
   const pagination = data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 };
 
   const handleEdit = (member: any) => {
-    setEditingMember(member);
+    navigate(`/dashboard/members/${member._id}/edit`);
   };
 
   const handleSuspend = async (member: any) => {
@@ -108,7 +104,7 @@ export const MembersPage: React.FC = () => {
           <Users className="h-7 w-7 text-primary" />
           Gym Members
         </h2>
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+        <Button onClick={() => navigate("/dashboard/members/new")} className="flex items-center gap-2">
           <UserPlus className="h-4 w-4" />
           Add Member
         </Button>
@@ -124,7 +120,7 @@ export const MembersPage: React.FC = () => {
         <div className="space-y-4">
           <MemberTable 
             members={members} 
-            onRowClick={(member) => setSelectedMember(member)}
+            onRowClick={(member) => navigate(`/dashboard/members/${member._id}`)}
             onEdit={handleEdit}
             onSuspend={handleSuspend}
             onDelete={handleDelete}
@@ -174,23 +170,6 @@ export const MembersPage: React.FC = () => {
           )}
         </div>
       )}
-
-      <AddMemberModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
-
-      <EditMemberModal
-        isOpen={!!editingMember}
-        onClose={() => setEditingMember(null)}
-        member={editingMember}
-      />
-
-      <MemberDrawer
-        member={selectedMember}
-        isOpen={!!selectedMember}
-        onClose={() => setSelectedMember(null)}
-      />
     </div>
   );
 };

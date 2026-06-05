@@ -13,7 +13,9 @@ import { Notification } from "../../models/notification.model";
 import { Attendance } from "../../models/attendance.model";
 import { TrainerChangeRequest } from "../../models/trainerChangeRequest.model";
 import bcrypt from "bcrypt";
-import { sendEmail } from "../../utils/email";
+import { sendWelcomeEmail } from "../../utils/email";
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env";
 
 export class MembersService {
   private membersRepository: MembersRepository;
@@ -118,21 +120,19 @@ export class MembersService {
       throw new ApiError(500, "Failed to retrieve complete member profile");
     }
     
+    // Generate setup token
+    const setupToken = jwt.sign(
+      { _id: newMember._id, isMember: true }, 
+      env.ACCESS_TOKEN_SECRET!, 
+      { expiresIn: '7d' }
+    );
+
     // Send welcome email to the new member
-    await sendEmail({
-      to: emailLower,
-      subject: "Welcome to FitCore - Your Account Details",
-      text: `Hello ${name},\n\nWelcome to FitCore! Your account has been created successfully.\n\nHere are your login details:\nEmail: ${emailLower}\nPassword: ${plainPassword}\n\nPlease login and change your password as soon as possible.\n\nBest regards,\nFitCore Team`,
-      html: `<p>Hello <strong>${name}</strong>,</p>
-             <p>Welcome to FitCore! Your account has been created successfully.</p>
-             <p>Here are your login details:</p>
-             <ul>
-               <li><strong>Email:</strong> ${emailLower}</li>
-               <li><strong>Password:</strong> ${plainPassword}</li>
-             </ul>
-             <p>Please login and change your password as soon as possible.</p>
-             <br/>
-             <p>Best regards,<br/>FitCore Team</p>`
+    sendWelcomeEmail({
+      email: emailLower,
+      name: name,
+      role: "MEMBER",
+      setupToken
     });
 
     return completedMember;
@@ -613,14 +613,11 @@ export class MembersService {
 
     // Note: Assuming trainers use a default password or you have a different mechanism to generate their passwords,
     // if there is a password field we should send it. We'll send a generic welcome email.
-    await sendEmail({
-      to: trainerEmail,
-      subject: "Welcome to FitCore - You've been added as a Trainer",
-      text: `Hello ${trainerData.fullName},\n\nYou have been added as a trainer at FitCore. Welcome to the team!\n\nBest regards,\nFitCore Team`,
-      html: `<p>Hello <strong>${trainerData.fullName}</strong>,</p>
-             <p>You have been added as a trainer at FitCore. Welcome to the team!</p>
-             <br/>
-             <p>Best regards,<br/>FitCore Team</p>`
+    // Send welcome email
+    sendWelcomeEmail({
+      email: trainerEmail,
+      name: trainerData.fullName,
+      role: "TRAINER"
     });
 
     return trainer;
