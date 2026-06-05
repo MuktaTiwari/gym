@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
@@ -45,9 +46,13 @@ import type {
 
 export const MemberDashboard: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "workouts" | "classes" | "attendance" | "trainer" | "payments" | "notifications" | "profile"
-  >("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabParam = searchParams.get("tab") as any;
+  const activeTab = activeTabParam || "overview";
+  
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
 
   // Real API state
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -109,15 +114,15 @@ export const MemberDashboard: React.FC = () => {
         fetchedAttendance,
         fetchedNotifications
       ] = await Promise.all([
-        memberApi.getWorkouts(),
-        memberApi.getBookings(),
-        memberApi.getPayments(),
-        memberApi.getClassSchedules(),
-        memberApi.getMyTrainer(),
-        memberApi.getTrainers(),
-        memberApi.getTrainerChangeRequests(),
-        memberApi.getMyAttendance(),
-        memberApi.getMyNotifications()
+        memberApi.getWorkouts().catch(() => []),
+        memberApi.getBookings().catch(() => []),
+        memberApi.getPayments().catch(() => []),
+        memberApi.getClassSchedules().catch(() => []),
+        memberApi.getMyTrainer().catch(() => null),
+        memberApi.getTrainers().catch(() => []),
+        memberApi.getTrainerChangeRequests().catch(() => []),
+        memberApi.getMyAttendance().catch(() => []),
+        memberApi.getMyNotifications().catch(() => [])
       ]);
 
       setWorkouts(fetchedWorkouts);
@@ -452,30 +457,6 @@ Thank you for your business and staying fit!
           </button>
         </motion.div>
       )}
-
-      {/* Navigation Tabs */}
-      <div className="flex border-b border-border overflow-x-auto pb-1 scrollbar-none gap-1 bg-surface-hover/10 p-1.5 rounded-2xl">
-        {[
-          { id: "overview", label: "My Hub", icon: Sparkles },
-          { id: "classes", label: "Class Bookings", icon: Calendar },
-          { id: "workouts", label: "Workout Log", icon: Dumbbell },
-          { id: "payments", label: "Billing & Ledger", icon: CreditCard },
-          { id: "profile", label: "My Profile & Pass", icon: UserIcon }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-200 shrink-0 relative ${
-              activeTab === tab.id
-                ? "bg-surface border border-border text-primary shadow-sm"
-                : "text-muted hover:text-foreground hover:bg-surface-hover/20"
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
 
       {isLoading ? (
         <div className="h-64 flex flex-col items-center justify-center gap-3">

@@ -1,31 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Calendar,
+  AlertTriangle,
+  Bookmark,
   CheckCircle,
   Clock,
-  Search,
-  User,
   Plus,
-  TrendingUp,
-  AlertTriangle,
-  LogOut,
-  UserCheck,
-  Bookmark,
-  Trash2,
-  Users,
-  Edit2,
-  XCircle,
-  Info,
-  CalendarDays,
+  Search,
+  SearchX,
   ShieldAlert,
   Sparkles,
-  SearchX
+  Trash2,
+  UserCheck,
+  Users,
+  XCircle
 } from "lucide-react";
-import { useAuthStore } from "../../store/authStore";
-import { memberApi } from "../dashboard/memberApi";
-import type { ClassSchedule, Booking } from "../dashboard/memberApi";
+import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../../lib/axios";
+import { useAuthStore } from "../../store/authStore";
+import type { Booking, ClassSchedule, Trainer } from "../dashboard/memberApi";
+import { memberApi } from "../dashboard/memberApi";
 
 export const AttendancePage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -42,9 +35,9 @@ export const AttendancePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Quick Check-In Form (Staff)
   const [memberSearch, setMemberSearch] = useState("");
   const [allMembers, setAllMembers] = useState<any[]>([]);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [checkInStatus, setCheckInStatus] = useState<"PRESENT" | "LATE">("PRESENT");
 
@@ -56,7 +49,7 @@ export const AttendancePage: React.FC = () => {
     time: "07:00 AM",
     capacity: 20
   });
-  
+
   // Feedback Messages
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
@@ -68,7 +61,7 @@ export const AttendancePage: React.FC = () => {
     if (!isAuthenticated || !user) return;
     try {
       if (!isSilent) setLoading(true);
-      
+
       // Fetch classes
       const classList = await memberApi.getClassSchedules();
       setClasses(classList);
@@ -92,18 +85,21 @@ export const AttendancePage: React.FC = () => {
     }
   };
 
-  // Fetch all members for check-in dropdown (only for staff)
   const fetchMembersForStaff = async () => {
     if (!isAuthenticated || !user) return;
     if (isMember) return;
     try {
-      const res = await axiosInstance.get("/members");
-      const membersList = Array.isArray(res.data.data)
-        ? res.data.data
-        : (res.data.data?.docs || []);
+      const [membersRes, trainersRes] = await Promise.all([
+        axiosInstance.get("/members"),
+        memberApi.getTrainers()
+      ]);
+      const membersList = Array.isArray(membersRes.data.data)
+        ? membersRes.data.data
+        : (membersRes.data.data?.docs || []);
       setAllMembers(membersList);
+      setTrainers(trainersRes);
     } catch (err) {
-      console.error("Error loading members catalog:", err);
+      console.error("Error loading staff data dependencies:", err);
     }
   };
 
@@ -292,21 +288,19 @@ export const AttendancePage: React.FC = () => {
             <>
               <button
                 onClick={() => setActiveTab("booking")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === "booking"
-                    ? "bg-primary text-white"
-                    : "text-muted hover:text-foreground hover:bg-surface-hover"
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "booking"
+                  ? "bg-primary text-white"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
               >
                 Book Classes
               </button>
               <button
                 onClick={() => setActiveTab("my-logs")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === "my-logs"
-                    ? "bg-primary text-white"
-                    : "text-muted hover:text-foreground hover:bg-surface-hover"
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "my-logs"
+                  ? "bg-primary text-white"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
               >
                 My Schedule & Logs
               </button>
@@ -315,31 +309,28 @@ export const AttendancePage: React.FC = () => {
             <>
               <button
                 onClick={() => setActiveTab("check-in")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === "check-in"
-                    ? "bg-primary text-white"
-                    : "text-muted hover:text-foreground hover:bg-surface-hover"
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "check-in"
+                  ? "bg-primary text-white"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
               >
                 Front-Desk Gates
               </button>
               <button
                 onClick={() => setActiveTab("schedules")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === "schedules"
-                    ? "bg-primary text-white"
-                    : "text-muted hover:text-foreground hover:bg-surface-hover"
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "schedules"
+                  ? "bg-primary text-white"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
               >
                 Schedules Builder
               </button>
               <button
                 onClick={() => setActiveTab("all-bookings")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === "all-bookings"
-                    ? "bg-primary text-white"
-                    : "text-muted hover:text-foreground hover:bg-surface-hover"
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "all-bookings"
+                  ? "bg-primary text-white"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+                  }`}
               >
                 Gym Bookings
               </button>
@@ -438,11 +429,10 @@ export const AttendancePage: React.FC = () => {
                               <button
                                 onClick={() => handleBookClass(c)}
                                 disabled={isFull || c.status === "CLOSED"}
-                                className={`w-full py-2.5 rounded-xl text-xs font-black text-white transition-all shadow-md flex items-center justify-center gap-1.5 ${
-                                  isFull || c.status === "CLOSED"
-                                    ? "bg-muted border border-transparent cursor-not-allowed opacity-50 shadow-none text-muted-foreground"
-                                    : "bg-gradient-primary hover:opacity-95 shadow-primary/10"
-                                }`}
+                                className={`w-full py-2.5 rounded-xl text-xs font-black text-white transition-all shadow-md flex items-center justify-center gap-1.5 ${isFull || c.status === "CLOSED"
+                                  ? "bg-muted border border-transparent cursor-not-allowed opacity-50 shadow-none text-muted-foreground"
+                                  : "bg-gradient-primary hover:opacity-95 shadow-primary/10"
+                                  }`}
                               >
                                 <Bookmark className="h-4 w-4" />
                                 {isFull ? "Class Full" : "Reserve Slot"}
@@ -502,11 +492,10 @@ export const AttendancePage: React.FC = () => {
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
-                                b.status === "BOOKED"
-                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : "bg-red-500/10 text-red-500 border-red-500/20"
-                              }`}
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${b.status === "BOOKED"
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                : "bg-red-500/10 text-red-500 border-red-500/20"
+                                }`}
                             >
                               {b.status === "BOOKED" ? "CONFIRMED" : b.status}
                             </span>
@@ -544,7 +533,7 @@ export const AttendancePage: React.FC = () => {
               {/* Quick check in card */}
               <div className="bg-surface border border-border p-5 rounded-2xl shadow-sm space-y-4">
                 <h3 className="text-lg font-extrabold tracking-tight">Gate Entry Scanner</h3>
-                
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
                   <input
@@ -589,21 +578,19 @@ export const AttendancePage: React.FC = () => {
                 <div className="flex gap-4">
                   <button
                     onClick={() => setCheckInStatus("PRESENT")}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                      checkInStatus === "PRESENT"
-                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
-                        : "bg-background text-muted border-border hover:bg-surface-hover"
-                    }`}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${checkInStatus === "PRESENT"
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                      : "bg-background text-muted border-border hover:bg-surface-hover"
+                      }`}
                   >
                     On-Time Check-In
                   </button>
                   <button
                     onClick={() => setCheckInStatus("LATE")}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
-                      checkInStatus === "LATE"
-                        ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                        : "bg-background text-muted border-border hover:bg-surface-hover"
-                    }`}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${checkInStatus === "LATE"
+                      ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                      : "bg-background text-muted border-border hover:bg-surface-hover"
+                      }`}
                   >
                     Late Arrival
                   </button>
@@ -703,13 +690,12 @@ export const AttendancePage: React.FC = () => {
                             </td>
                             <td className="px-6 py-4">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
-                                  c.status === "ACTIVE"
-                                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                    : c.status === "CLOSED"
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${c.status === "ACTIVE"
+                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                  : c.status === "CLOSED"
                                     ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                                     : "bg-red-500/10 text-red-500 border-red-500/20"
-                                }`}
+                                  }`}
                               >
                                 {c.status}
                               </span>
@@ -802,11 +788,10 @@ export const AttendancePage: React.FC = () => {
                           <td className="px-6 py-4 text-muted text-xs font-mono">{b.time}</td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
-                                b.status === "BOOKED"
-                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : "bg-red-500/10 text-red-500 border-red-500/20"
-                              }`}
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${b.status === "BOOKED"
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                : "bg-red-500/10 text-red-500 border-red-500/20"
+                                }`}
                             >
                               {b.status === "BOOKED" ? "CONFIRMED" : b.status}
                             </span>
@@ -872,14 +857,19 @@ export const AttendancePage: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-muted uppercase">Trainer Name</label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    placeholder="e.g. Coach Sarah Connor"
                     value={newClassData.trainerName}
                     onChange={(e) => setNewClassData({ ...newClassData, trainerName: e.target.value })}
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-all"
-                  />
+                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-all cursor-pointer appearance-none"
+                  >
+                    <option value="" disabled>Select a trainer</option>
+                    {trainers.map(trainer => (
+                      <option key={trainer._id} value={trainer.fullName}>
+                        {trainer.fullName} - {trainer.specialization || "General"}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

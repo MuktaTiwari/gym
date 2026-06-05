@@ -12,7 +12,9 @@ import {
   DollarSign,
   TrendingUp,
   Award,
-  Zap
+  Zap,
+  Send,
+  Loader2
 } from "lucide-react";
 import {
   AreaChart,
@@ -39,6 +41,11 @@ export const DashboardPage: React.FC = () => {
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Broadcast state
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [broadcastSuccess, setBroadcastSuccess] = useState("");
 
   const loadDashboardData = async () => {
     if (!isAuthenticated || !user) return;
@@ -141,6 +148,24 @@ export const DashboardPage: React.FC = () => {
       }
     }
   }, [isMember, isAuthenticated, user]);
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastMessage.trim()) return;
+    setIsBroadcasting(true);
+    setBroadcastSuccess("");
+    try {
+      await memberApi.createAnnouncement({ message: broadcastMessage });
+      setBroadcastSuccess("Announcement broadcasted successfully!");
+      setBroadcastMessage("");
+      loadDashboardData();
+    } catch (err) {
+      console.error("Broadcast failed", err);
+    } finally {
+      setIsBroadcasting(false);
+      setTimeout(() => setBroadcastSuccess(""), 4000);
+    }
+  };
 
 
 
@@ -307,6 +332,46 @@ export const DashboardPage: React.FC = () => {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
+            </motion.div>
+          )}
+
+          {/* Broadcast Announcement */}
+          {(isOwner || isAdmin) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="p-6 rounded-2xl bg-surface border border-border flex flex-col gap-4 shadow-sm"
+            >
+              <div>
+                <h3 className="font-extrabold text-lg flex items-center gap-2">
+                  <Send className="h-4.5 w-4.5 text-primary" />
+                  Broadcast Announcement
+                </h3>
+                <p className="text-xs text-muted font-medium mt-1">
+                  Send a push notification alert to all active gym members.
+                </p>
+              </div>
+              <form onSubmit={handleBroadcast} className="flex flex-col gap-3">
+                <textarea
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                  placeholder="Type your announcement here..."
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all resize-none h-20"
+                  required
+                />
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-emerald-500">{broadcastSuccess}</span>
+                  <button
+                    type="submit"
+                    disabled={isBroadcasting || !broadcastMessage.trim()}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-primary hover:opacity-95 shadow-md shadow-primary/10 transition-all disabled:opacity-50"
+                  >
+                    {isBroadcasting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    <span>Broadcast Now</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           )}
         </div>

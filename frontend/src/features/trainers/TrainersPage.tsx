@@ -13,7 +13,9 @@ import {
   Users,
   X,
   Loader2,
-  Dumbbell
+  Dumbbell,
+  Check,
+  UserCheck
 } from "lucide-react";
 import { memberApi } from "../dashboard/memberApi";
 import type { Trainer } from "../dashboard/memberApi";
@@ -75,6 +77,7 @@ export const TrainersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const isAuthorized = user?.role === "GYM_OWNER" || user?.role === "GYM_ADMIN";
 
+  const [activeTab, setActiveTab] = useState<"roster" | "requests">("roster");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -100,6 +103,20 @@ export const TrainersPage: React.FC = () => {
   const { data: trainers = [], isLoading } = useQuery({
     queryKey: ["trainers"],
     queryFn: memberApi.getTrainers
+  });
+
+  const { data: requests = [], isLoading: isLoadingRequests } = useQuery({
+    queryKey: ["trainerRequests"],
+    queryFn: memberApi.getTrainerChangeRequests,
+    enabled: isAuthorized
+  });
+
+  const updateRequestMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "APPROVED" | "REJECTED" }) =>
+      memberApi.updateTrainerChangeRequest(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trainerRequests"] });
+    }
   });
 
   const createMutation = useMutation({
@@ -358,6 +375,88 @@ export const TrainersPage: React.FC = () => {
     );
   };
 
+  const renderRequests = () => {
+    if (isLoadingRequests) {
+      return (
+        <div className="flex flex-col items-center justify-center h-80 space-y-3">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+        </div>
+      );
+    }
+
+    if (requests.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center bg-surface border border-border/50 p-12 rounded-2xl text-center space-y-4">
+          <UserCheck className="h-10 w-10 text-muted" />
+          <h3 className="text-lg font-bold text-foreground">No Requests Found</h3>
+          <p className="text-muted text-sm max-w-md mx-auto mt-1">
+            Members have not submitted any trainer reassignment requests recently.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-surface-hover/30 text-xs font-bold text-muted uppercase tracking-wider">
+                <th className="px-6 py-4">Request ID</th>
+                <th className="px-6 py-4">Member Name</th>
+                <th className="px-6 py-4">Requested Coach</th>
+                <th className="px-6 py-4">Reason</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border text-sm font-medium">
+              {requests.map((r) => (
+                <tr key={r._id} className="hover:bg-surface-hover/20 transition-colors">
+                  <td className="px-6 py-4 font-mono text-xs text-muted">{r.requestId}</td>
+                  <td className="px-6 py-4 font-extrabold text-foreground">{r.memberId?.fullName || "Member"}</td>
+                  <td className="px-6 py-4 text-muted">{r.requestedTrainerId?.fullName || "Coach"}</td>
+                  <td className="px-6 py-4 text-xs italic text-muted max-w-[200px] truncate">{r.reason}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black border uppercase ${
+                      r.status === "APPROVED"
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        : r.status === "PENDING"
+                        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                        : "bg-destructive/10 text-destructive border-destructive/20"
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    {r.status === "PENDING" ? (
+                      <>
+                        <button
+                          onClick={() => updateRequestMutation.mutate({ id: r._id, status: "APPROVED" })}
+                          className="px-2.5 py-1.5 hover:bg-emerald-500/10 text-emerald-500 border border-transparent hover:border-emerald-500/20 rounded-lg text-[10px] font-extrabold uppercase transition-all"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => updateRequestMutation.mutate({ id: r._id, status: "REJECTED" })}
+                          className="px-2.5 py-1.5 hover:bg-red-500/10 text-red-500 border border-transparent hover:border-red-500/20 rounded-lg text-[10px] font-extrabold uppercase transition-all"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted font-semibold">Closed</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8 pb-12 transition-all duration-300">
       {/* Header Banner */}
@@ -381,7 +480,35 @@ export const TrainersPage: React.FC = () => {
         )}
       </div>
 
-      {renderContent()}
+      <div className="flex gap-2 bg-surface border border-border p-1 rounded-xl shadow-sm self-start max-w-sm">
+        <button
+          onClick={() => setActiveTab("roster")}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+            activeTab === "roster"
+              ? "bg-primary text-white"
+              : "text-muted hover:text-foreground hover:bg-surface-hover"
+          }`}
+        >
+          Active Roster
+        </button>
+        <button
+          onClick={() => setActiveTab("requests")}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            activeTab === "requests"
+              ? "bg-primary text-white"
+              : "text-muted hover:text-foreground hover:bg-surface-hover"
+          }`}
+        >
+          Member Requests
+          {requests.filter((r) => r.status === "PENDING").length > 0 && (
+            <span className="bg-destructive text-white h-4 w-4 rounded-full text-[9px] flex items-center justify-center">
+              {requests.filter((r) => r.status === "PENDING").length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "roster" ? renderContent() : renderRequests()}
 
       {/* Onboard / Edit Trainer Modal Dialog (Framer Motion custom overlay) */}
       <AnimatePresence>

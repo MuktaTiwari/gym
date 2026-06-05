@@ -1,24 +1,24 @@
-import React, { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
-import { ThemeToggle } from "../shared/ThemeToggle";
-import { ColorThemeSelector } from "../shared/ColorThemeSelector";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Dumbbell,
-  LayoutDashboard,
-  Users,
+  Bell,
   Calendar,
   CreditCard,
-  TrendingUp,
-  Settings,
+  Dumbbell,
+  FileText,
+  LayoutDashboard,
   LogOut,
   Menu,
-  X,
-  FileText,
-  UserCheck
+  Settings,
+  UserCheck,
+  Users,
+  X
 } from "lucide-react";
+import React, { useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { logoutApi } from "../../features/auth/authApi";
+import { useAuthStore } from "../../store/authStore";
+import { ColorThemeSelector } from "../shared/ColorThemeSelector";
+import { ThemeToggle } from "../shared/ThemeToggle";
 
 export const DashboardLayout: React.FC = () => {
   const { user, logoutAction } = useAuthStore();
@@ -70,10 +70,14 @@ export const DashboardLayout: React.FC = () => {
 
     // Default Member navigation
     return [
-      { label: "My Fitness Hub", path: "/dashboard", icon: LayoutDashboard },
-      { label: "Book Classes", path: "/dashboard/classes", icon: Calendar },
-      { label: "My Attendance", path: "/dashboard/attendance", icon: UserCheck },
-      { label: "Payments History", path: "/dashboard/payments", icon: CreditCard },
+      { label: "My Hub", path: "/dashboard?tab=overview", icon: LayoutDashboard },
+      { label: "Class Bookings", path: "/dashboard?tab=classes", icon: Calendar },
+      { label: "Workout Log", path: "/dashboard?tab=workouts", icon: Dumbbell },
+      { label: "Attendance", path: "/dashboard?tab=attendance", icon: UserCheck },
+      { label: "My Trainer", path: "/dashboard?tab=trainer", icon: Users },
+      { label: "Billing & Ledger", path: "/dashboard?tab=payments", icon: CreditCard },
+      { label: "Notifications", path: "/dashboard?tab=notifications", icon: Bell },
+      { label: "My Profile & Pass", path: "/dashboard?tab=profile", icon: FileText },
     ];
   };
 
@@ -112,21 +116,23 @@ export const DashboardLayout: React.FC = () => {
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1.5">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = 
+                location.pathname + location.search === item.path || 
+                (location.pathname === "/dashboard" && location.search === "" && item.path === "/dashboard?tab=overview") ||
+                (item.path.indexOf("?") === -1 && location.pathname === item.path);
+                
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 group ${
-                    isActive
-                      ? "text-primary bg-primary/5 border border-primary/15"
-                      : "text-muted hover:text-foreground hover:bg-surface-hover border border-transparent"
-                  }`}
+                  className={`relative flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 group ${isActive
+                    ? "text-primary bg-primary/5 border border-primary/15"
+                    : "text-muted hover:text-foreground hover:bg-surface-hover border border-transparent"
+                    }`}
                 >
                   <item.icon
-                    className={`h-5 w-5 ${
-                      isActive ? "text-primary" : "text-muted group-hover:text-foreground"
-                    }`}
+                    className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted group-hover:text-foreground"
+                      }`}
                   />
                   <span>{item.label}</span>
                   {isActive && (
@@ -278,17 +284,20 @@ export const DashboardLayout: React.FC = () => {
                 {/* Nav */}
                 <nav className="flex flex-col gap-1.5">
                   {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                    const isActive = 
+                      location.pathname + location.search === item.path || 
+                      (location.pathname === "/dashboard" && location.search === "" && item.path === "/dashboard?tab=overview") ||
+                      (item.path.indexOf("?") === -1 && location.pathname === item.path);
+                      
                     return (
                       <Link
                         key={item.path}
                         to={item.path}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                          isActive
-                            ? "text-primary bg-primary/5 border border-primary/10"
-                            : "text-muted hover:text-foreground hover:bg-surface-hover"
-                        }`}
+                        className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 ${isActive
+                          ? "text-primary bg-primary/5 border border-primary/10"
+                          : "text-muted hover:text-foreground hover:bg-surface-hover"
+                          }`}
                       >
                         <item.icon className="h-5 w-5" />
                         <span>{item.label}</span>
