@@ -111,14 +111,6 @@ export const AttendancePage: React.FC = () => {
     }
   }, [user, isAuthenticated]);
 
-  // Dynamic Background Polling every 3 seconds
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    const timer = setInterval(() => {
-      fetchData(true);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [user, isAuthenticated]);
 
   // Helper trigger messages
   const showSuccess = (msg: string) => {

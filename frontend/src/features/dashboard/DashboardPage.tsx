@@ -141,10 +141,6 @@ export const DashboardPage: React.FC = () => {
     if (isAuthenticated && user) {
       if (!isMember) {
         loadDashboardData();
-        const interval = setInterval(() => {
-          loadDashboardData();
-        }, 5000);
-        return () => clearInterval(interval);
       }
     }
   }, [isMember, isAuthenticated, user]);

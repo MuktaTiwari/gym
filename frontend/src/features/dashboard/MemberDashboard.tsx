@@ -159,8 +159,6 @@ export const MemberDashboard: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       loadData(true);
-      const interval = setInterval(() => loadData(false), 3000);
-      return () => clearInterval(interval);
     }
   }, [user, isAuthenticated]);
 
@@ -200,7 +198,8 @@ export const MemberDashboard: React.FC = () => {
       setWorkoutDuration(45);
       setWorkoutNotes("");
       setExercises([{ name: "", sets: 3, reps: 10 }]);
-      await loadData();
+      const workouts = await memberApi.getWorkouts().catch(() => []);
+      setWorkouts(workouts);
     } catch (err) {
       console.error("Error saving workout", err);
     }
@@ -216,7 +215,12 @@ export const MemberDashboard: React.FC = () => {
         time,
         date: new Date().toISOString()
       });
-      await loadData();
+      const [newBookings, fetchedClasses] = await Promise.all([
+        memberApi.getBookings().catch(() => []),
+        memberApi.getClassSchedules().catch(() => [])
+      ]);
+      setBookings(newBookings);
+      setClasses(fetchedClasses);
     } catch (err) {
       alert("Error booking class: " + ((err as any).response?.data?.message || (err as any).message));
     }
@@ -227,7 +231,12 @@ export const MemberDashboard: React.FC = () => {
     if (!confirm("Are you sure you want to cancel this class booking?")) return;
     try {
       await memberApi.cancelBooking(bookingId);
-      await loadData();
+      const [newBookings, fetchedClasses] = await Promise.all([
+        memberApi.getBookings().catch(() => []),
+        memberApi.getClassSchedules().catch(() => [])
+      ]);
+      setBookings(newBookings);
+      setClasses(fetchedClasses);
     } catch (err) {
       console.error("Error cancelling booking", err);
     }
@@ -244,7 +253,8 @@ export const MemberDashboard: React.FC = () => {
         date: new Date().toISOString()
       });
       alert("Simulated Stripe transaction was successful!");
-      await loadData();
+      const paymentsList = await memberApi.getPayments().catch(() => []);
+      setPayments(paymentsList);
     } catch (err) {
       console.error("Error renewing membership", err);
     }
@@ -273,7 +283,6 @@ export const MemberDashboard: React.FC = () => {
         user.memberProfile = updatedProfile;
       }
       alert("Profile updated successfully!");
-      await loadData();
     } catch (err) {
       console.error("Error saving profile", err);
     } finally {
@@ -295,7 +304,8 @@ export const MemberDashboard: React.FC = () => {
       alert("Trainer reassignment request submitted to administrators!");
       setRequestReason("");
       setRequestedTrainerId("");
-      await loadData();
+      const requests = await memberApi.getTrainerChangeRequests().catch(() => []);
+      setChangeRequests(requests);
     } catch (err) {
       console.error("Error requesting trainer change", err);
     } finally {
@@ -307,7 +317,8 @@ export const MemberDashboard: React.FC = () => {
   const handleMarkNotificationRead = async (notifId: string) => {
     try {
       await memberApi.markNotificationRead(notifId);
-      await loadData();
+      const notifs = await memberApi.getMyNotifications().catch(() => []);
+      setNotifications(notifs);
     } catch (err) {
       console.error("Error marking notification read", err);
     }
