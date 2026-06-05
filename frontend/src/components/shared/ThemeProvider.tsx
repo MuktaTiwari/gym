@@ -7,11 +7,12 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const { theme } = useThemeStore();
+  const { theme, colorTheme } = useThemeStore();
 
   useEffect(() => {
     const root = window.document.documentElement;
     
+    // Apply Light/Dark Theme
     const applyTheme = (t: Theme) => {
       let activeTheme: "light" | "dark" = "light";
       
@@ -33,6 +34,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     };
 
     applyTheme(theme);
+    
+    // Apply Color Theme
+    root.setAttribute("data-color-theme", colorTheme || "indigo");
 
     if (theme === "system") {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -41,7 +45,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
     }
-  }, [theme]);
+  }, [theme, colorTheme]);
 
   return <>{children}</>;
 };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { ThemeToggle } from "../shared/ThemeToggle";
+import { ColorThemeSelector } from "../shared/ColorThemeSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dumbbell,
@@ -55,7 +56,6 @@ export const DashboardLayout: React.FC = () => {
         { label: "Plans", path: "/dashboard/plans", icon: FileText },
         { label: "Classes", path: "/dashboard/classes", icon: Calendar },
         { label: "Payments", path: "/dashboard/payments", icon: CreditCard },
-        { label: "Reports", path: "/dashboard/reports", icon: TrendingUp },
         { label: "Settings", path: "/dashboard/settings", icon: Settings },
       ];
     }
@@ -189,7 +189,10 @@ export const DashboardLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <ColorThemeSelector />
+              <ThemeToggle />
+            </div>
             <div className="h-8 w-[1px] bg-border hidden md:block" />
 
             {/* Profile Menu Dropdown */}
