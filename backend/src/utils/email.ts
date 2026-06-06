@@ -46,7 +46,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 
 
 export const sendWelcomeEmail = async ({ email, name, role, contextMessage, setupToken }: WelcomeEmailOptions) => {
-  const roleDisplay = role.replace(/_/g, ' ').toLowerCase();
+  const roleDisplay = role.replaceAll("_", " ").toLowerCase();
   const context = contextMessage ? ` ${contextMessage}` : "";
   
   const frontendUrl = env.FRONTEND_URL || "http://localhost:5174";
@@ -56,7 +56,10 @@ export const sendWelcomeEmail = async ({ email, name, role, contextMessage, setu
     : `<p style="color: #374151; font-size: 16px;">Please log in to access your dashboard and get started.</p>`;
 
   const emailSubject = setupToken ? `Action Required: Set up your FitCore Account` : `Welcome to FitCore Gym Management - Account Created`;
-  const emailText = `Hello ${name},\n\nYour ${roleDisplay} account${context} has been successfully created.\n\nYour login email is: ${email}\n\n${setupToken ? `Please set your password at: ${frontendUrl}/set-password?token=${setupToken}` : "Please log in to access your dashboard."}`;
+  const setupMessage = setupToken 
+    ? "Please set your password at: " + frontendUrl + "/set-password?token=" + setupToken
+    : "Please log in to access your dashboard.";
+  const emailText = `Hello ${name},\n\nYour ${roleDisplay} account${context} has been successfully created.\n\nYour login email is: ${email}\n\n${setupMessage}`;
   
   return sendEmail({
     to: email,

@@ -5,7 +5,6 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { ApiError } from "../../utils/ApiError";
 import { env } from "../../config/env";
-import jwt from "jsonwebtoken";
 
 const cookieOptions = {
   httpOnly: true,

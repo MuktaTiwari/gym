@@ -6,7 +6,6 @@ import { env } from "../../config/env";
 import { AuthRepository } from "./auth.repository";
 import { Member } from "../../models/member.model";
 import { User } from "../../models/user.model";
-import { GymStaff } from "../../models/gymStaff.model";
 import mongoose from "mongoose";
 import { sendWelcomeEmail } from "../../utils/email";
 
@@ -44,7 +43,7 @@ export class AuthService {
       });
       await gym.save();
       
-      user.gymId = gym._id as unknown as typeof user.gymId;
+      user.gymId = gym._id;
       await user.save();
     }
 
@@ -93,7 +92,12 @@ export class AuthService {
 
     const idStr = isMember ? String(member._id) : String(user!._id);
     const roleStr = isMember ? "MEMBER" : user!.role;
-    const gymIdStr = isMember ? String(member.gymId) : (user!.gymId ? String(user!.gymId) : undefined);
+    let gymIdStr: string | undefined;
+    if (isMember) {
+      gymIdStr = String(member.gymId);
+    } else if (user!.gymId) {
+      gymIdStr = String(user!.gymId);
+    }
 
     const accessToken = generateAccessToken(idStr, roleStr, gymIdStr);
     const refreshToken = generateRefreshToken(idStr);
@@ -133,21 +137,26 @@ export class AuthService {
       let isMember = false;
       let member: any = null;
 
-      if (!user) {
-        member = await Member.findById(decoded._id);
-        if (!member || member.refreshToken !== token) {
-          throw new ApiError(401, "Invalid or expired refresh token");
-        }
-        isMember = true;
-      } else {
+      if (user) {
         if (user.refreshToken !== token) {
           throw new ApiError(401, "Invalid or expired refresh token");
         }
+      } else {
+        member = await Member.findById(decoded._id);
+        if (member?.refreshToken !== token) {
+          throw new ApiError(401, "Invalid or expired refresh token");
+        }
+        isMember = true;
       }
 
       const idStr = isMember ? String(member._id) : String(user!._id);
       const roleStr = isMember ? "MEMBER" : user!.role;
-      const gymIdStr = isMember ? String(member.gymId) : (user!.gymId ? String(user!.gymId) : undefined);
+      let gymIdStr: string | undefined;
+      if (isMember) {
+        gymIdStr = String(member.gymId);
+      } else if (user!.gymId) {
+        gymIdStr = String(user!.gymId);
+      }
 
       const accessToken = generateAccessToken(idStr, roleStr, gymIdStr);
       const newRefreshToken = generateRefreshToken(idStr);
@@ -164,6 +173,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     } catch (error) {
+      console.error(error);
       throw new ApiError(401, "Invalid refresh token");
     }
   }

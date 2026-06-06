@@ -20,6 +20,21 @@ import { useAuthStore } from "../../store/authStore";
 import type { Booking, ClassSchedule, Trainer } from "../dashboard/memberApi";
 import { memberApi } from "../dashboard/memberApi";
 
+export interface GymMember {
+  _id: string;
+  fullName: string;
+  email: string;
+  memberId?: string;
+}
+
+const getErrorMessage = (err: unknown): string => {
+  if (typeof err === "object" && err !== null) {
+    const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
+    return errorObj.response?.data?.message || errorObj.message || "An unexpected error occurred.";
+  }
+  return "An unexpected error occurred.";
+};
+
 export const AttendancePage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
 
@@ -31,14 +46,14 @@ export const AttendancePage: React.FC = () => {
   // Data States
   const [classes, setClasses] = useState<ClassSchedule[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [memberSearch, setMemberSearch] = useState("");
-  const [allMembers, setAllMembers] = useState<any[]>([]);
+  const [allMembers, setAllMembers] = useState<GymMember[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
-  const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [selectedMember, setSelectedMember] = useState<GymMember | null>(null);
   const [checkInStatus, setCheckInStatus] = useState<"PRESENT" | "LATE">("PRESENT");
 
   // Add Class Schedule Modal (Staff)
@@ -63,9 +78,9 @@ export const AttendancePage: React.FC = () => {
       const classList = await memberApi.getClassSchedules();
       setClasses(classList);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching class schedules:", err);
-      setError(err?.response?.data?.message || "Failed to synchronise with gym servers.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -78,7 +93,7 @@ export const AttendancePage: React.FC = () => {
       const myBookingsList = await memberApi.getBookings();
       setBookings(myBookingsList);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching bookings:", err);
     } finally {
       setLoading(false);
@@ -92,7 +107,7 @@ export const AttendancePage: React.FC = () => {
       const bookingsList = await memberApi.getAllBookings();
       setAllBookings(bookingsList);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching all bookings:", err);
     } finally {
       setLoading(false);
@@ -174,8 +189,8 @@ export const AttendancePage: React.FC = () => {
       });
       showSuccess(`Successfully booked slot for ${schedule.className}!`);
       fetchData(true);
-    } catch (err: any) {
-      showAlert(err?.response?.data?.message || "Could not reserve seat.");
+    } catch (err) {
+      showAlert(getErrorMessage(err));
     }
   };
 
@@ -185,8 +200,8 @@ export const AttendancePage: React.FC = () => {
       await memberApi.cancelBooking(bookingId);
       showSuccess("Booking successfully cancelled.");
       fetchData(true);
-    } catch (err: any) {
-      showAlert(err?.response?.data?.message || "Could not cancel booking.");
+    } catch (err) {
+      showAlert(getErrorMessage(err));
     }
   };
 
@@ -203,19 +218,21 @@ export const AttendancePage: React.FC = () => {
       setIsAddClassOpen(false);
       setNewClassData({ className: "", trainerName: "", time: "07:00 AM", capacity: 20 });
       fetchData(true);
-    } catch (err: any) {
+    } catch (err) {
+      console.error(err);
       showAlert("Failed to schedule class.");
     }
   };
 
   // Cancel class schedule (Staff)
   const handleCancelClass = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to cancel "${name}"? Members will be notified instantly.`)) return;
+    if (!globalThis.confirm(`Are you sure you want to cancel "${name}"? Members will be notified instantly.`)) return;
     try {
       await memberApi.updateClassSchedule(id, { status: "CANCELLED" });
       showSuccess(`Class "${name}" cancelled. Members notified.`);
       fetchData(true);
-    } catch (err: any) {
+    } catch (err) {
+      console.error(err);
       showAlert("Could not update class status.");
     }
   };
@@ -226,19 +243,21 @@ export const AttendancePage: React.FC = () => {
       await memberApi.updateClassSchedule(id, { status: "CLOSED" });
       showSuccess(`Class "${name}" closed for bookings.`);
       fetchData(true);
-    } catch (err: any) {
+    } catch (err) {
+      console.error(err);
       showAlert("Could not close class schedule.");
     }
   };
 
   // Delete class schedule (Staff)
   const handleDeleteClass = async (id: string, name: string) => {
-    if (!window.confirm(`Delete "${name}" entirely from records? This removes active member reservations.`)) return;
+    if (!globalThis.confirm(`Delete "${name}" entirely from records? This removes active member reservations.`)) return;
     try {
       await memberApi.deleteClassSchedule(id);
       showSuccess(`Class "${name}" deleted.`);
       fetchData(true);
-    } catch (err: any) {
+    } catch (err) {
+      console.error(err);
       showAlert("Could not delete class.");
     }
   };
@@ -249,14 +268,15 @@ export const AttendancePage: React.FC = () => {
     try {
       await memberApi.markAttendance({
         memberId: selectedMember._id,
-        status: checkInStatus as "PRESENT" | "LATE",
+        status: checkInStatus,
         date: new Date().toISOString()
       });
       showSuccess(`Approved Gate Check-In for ${selectedMember.fullName}!`);
       setSelectedMember(null);
       setMemberSearch("");
       fetchMembersForStaff();
-    } catch (err: any) {
+    } catch (err) {
+      console.error(err);
       showAlert("Failed to approve check-in.");
     }
   };
@@ -266,7 +286,7 @@ export const AttendancePage: React.FC = () => {
     (m) =>
       m.fullName.toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.email.toLowerCase().includes(memberSearch.toLowerCase()) ||
-      (m.memberId && m.memberId.toLowerCase().includes(memberSearch.toLowerCase()))
+      m.memberId?.toLowerCase().includes(memberSearch.toLowerCase())
   );
 
   return (
@@ -718,12 +738,13 @@ export const AttendancePage: React.FC = () => {
                             </td>
                             <td className="px-6 py-4">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${c.status === "ACTIVE"
-                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : c.status === "CLOSED"
-                                    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                    : "bg-red-500/10 text-red-500 border-red-500/20"
-                                  }`}
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
+                                  c.status === "ACTIVE"
+                                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                    : c.status === "CLOSED"
+                                      ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                      : "bg-red-500/10 text-red-500 border-red-500/20"
+                                }`}
                               >
                                 {c.status}
                               </span>
@@ -872,8 +893,9 @@ export const AttendancePage: React.FC = () => {
 
               <form onSubmit={handleCreateClass} className="space-y-4 pt-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted uppercase">Class Name</label>
+                  <label htmlFor="className" className="text-xs font-bold text-muted uppercase">Class Name</label>
                   <input
+                    id="className"
                     type="text"
                     required
                     placeholder="e.g. HIIT Power Zone"
@@ -884,8 +906,9 @@ export const AttendancePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted uppercase">Trainer Name</label>
+                  <label htmlFor="trainerName" className="text-xs font-bold text-muted uppercase">Trainer Name</label>
                   <select
+                    id="trainerName"
                     required
                     value={newClassData.trainerName}
                     onChange={(e) => setNewClassData({ ...newClassData, trainerName: e.target.value })}
@@ -902,8 +925,9 @@ export const AttendancePage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Time Slot</label>
+                    <label htmlFor="timeSlot" className="text-xs font-bold text-muted uppercase">Time Slot</label>
                     <input
+                      id="timeSlot"
                       type="text"
                       required
                       placeholder="e.g. 06:00 PM"
@@ -914,8 +938,9 @@ export const AttendancePage: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted uppercase">Capacity Seats</label>
+                    <label htmlFor="capacity" className="text-xs font-bold text-muted uppercase">Capacity Seats</label>
                     <input
+                      id="capacity"
                       type="number"
                       required
                       placeholder="20"

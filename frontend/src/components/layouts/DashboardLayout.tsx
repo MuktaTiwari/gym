@@ -119,7 +119,7 @@ export const DashboardLayout: React.FC = () => {
               const isActive = 
                 location.pathname + location.search === item.path || 
                 (location.pathname === "/dashboard" && location.search === "" && item.path === "/dashboard?tab=overview") ||
-                (item.path.indexOf("?") === -1 && location.pathname === item.path);
+                (!item.path.includes("?") && location.pathname === item.path);
                 
               return (
                 <Link
@@ -287,7 +287,7 @@ export const DashboardLayout: React.FC = () => {
                     const isActive = 
                       location.pathname + location.search === item.path || 
                       (location.pathname === "/dashboard" && location.search === "" && item.path === "/dashboard?tab=overview") ||
-                      (item.path.indexOf("?") === -1 && location.pathname === item.path);
+                      (!item.path.includes("?") && location.pathname === item.path);
                       
                     return (
                       <Link

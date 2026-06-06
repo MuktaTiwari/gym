@@ -23,7 +23,13 @@ export interface Booking {
   trainerName: string;
   time: string;
   date: string;
-  status?: "BOOKED" | "ATTENDED" | "CANCELLED";
+  status: "BOOKED" | "CANCELLED" | "COMPLETED";
+  memberId?: {
+    _id: string;
+    fullName: string;
+    email: string;
+    memberId?: string;
+  };
 }
 
 export interface PaymentRecord {
@@ -155,7 +161,7 @@ export const memberApi = {
     return res.data.data;
   },
 
-  getAllBookings: async (): Promise<any[]> => {
+  getAllBookings: async (): Promise<Booking[]> => {
     const res = await axiosInstance.get("/members/bookings");
     return res.data.data;
   },

@@ -41,7 +41,7 @@ export const RegisterPage: React.FC = () => {
   const mutation = useMutation({
     mutationFn: registerApi,
 
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Successfully registered Super Admin!");
       setTimeout(() => {
         // Redirect to login with success state

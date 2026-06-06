@@ -3,7 +3,6 @@ import { useAuthStore } from "../../store/authStore";
 import { MemberDashboard } from "./MemberDashboard";
 import { axiosInstance } from "../../lib/axios";
 import { memberApi } from "./memberApi";
-import type { ClassSchedule, Trainer, TrainerChangeRequest } from "./memberApi";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -12,7 +11,6 @@ import {
   DollarSign,
   TrendingUp,
   Award,
-  Zap,
   Send,
   Loader2
 } from "lucide-react";
@@ -30,7 +28,6 @@ export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const isOwner = user?.role === "GYM_OWNER";
   const isAdmin = user?.role === "GYM_ADMIN";
-  const isTrainer = user?.role === "TRAINER";
   const isMember = user?.role === "MEMBER";
 
   // Dashboard state variables
@@ -69,7 +66,7 @@ export const DashboardPage: React.FC = () => {
       // Count check-in logs registered today
       const todayStr = new Date().toDateString();
       const todayCheckins = logsList.filter((log: any) => {
-        const isCheckin = log.action && log.action.toLowerCase().includes("check");
+        const isCheckin = log.action?.toLowerCase().includes("check");
         const isToday = new Date(log.timestamp).toDateString() === todayStr;
         return isCheckin && isToday;
       }).length;
@@ -77,7 +74,7 @@ export const DashboardPage: React.FC = () => {
       // Fallback to absolute count of checkins if none registered today specifically
       setTodayAttendance(
         todayCheckins ||
-        logsList.filter((log: any) => log.action && log.action.toLowerCase().includes("check")).length
+        logsList.filter((log: any) => log.action?.toLowerCase().includes("check")).length
       );
 
       // Monthly revenue sum (from completed payments)
@@ -290,7 +287,7 @@ export const DashboardPage: React.FC = () => {
                     <defs>
                       <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.0} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
