@@ -56,38 +56,51 @@ export const AttendancePage: React.FC = () => {
 
   const isMember = user?.role === "MEMBER";
 
-  // Poll / Fetch Data Function
-  const fetchData = async (isSilent = false) => {
+  const fetchClasses = async (isSilent = false) => {
     if (!isAuthenticated || !user) return;
     try {
       if (!isSilent) setLoading(true);
-
-      // Fetch classes
       const classList = await memberApi.getClassSchedules();
       setClasses(classList);
-
-      if (isMember) {
-        // Fetch member personal bookings
-        const myBookingsList = await memberApi.getBookings();
-        setBookings(myBookingsList);
-      } else {
-        // Staff - Fetch gym members for gate check-in & all bookings
-        const bookingsList = await memberApi.getAllBookings();
-        setAllBookings(bookingsList);
-      }
-
       setError(null);
     } catch (err: any) {
-      console.error("Error fetching attendance data:", err);
+      console.error("Error fetching class schedules:", err);
       setError(err?.response?.data?.message || "Failed to synchronise with gym servers.");
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchMemberBookings = async (isSilent = false) => {
+    if (!isAuthenticated || !user || !isMember) return;
+    try {
+      if (!isSilent) setLoading(true);
+      const myBookingsList = await memberApi.getBookings();
+      setBookings(myBookingsList);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching bookings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllBookings = async (isSilent = false) => {
+    if (!isAuthenticated || !user || isMember) return;
+    try {
+      if (!isSilent) setLoading(true);
+      const bookingsList = await memberApi.getAllBookings();
+      setAllBookings(bookingsList);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching all bookings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchMembersForStaff = async () => {
-    if (!isAuthenticated || !user) return;
-    if (isMember) return;
+    if (!isAuthenticated || !user || isMember) return;
     try {
       const [membersRes, trainersRes] = await Promise.all([
         axiosInstance.get("/members"),
@@ -103,13 +116,39 @@ export const AttendancePage: React.FC = () => {
     }
   };
 
-  // Initial load
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchData();
-      fetchMembersForStaff();
+  // Convenience wrapper used by action handlers to refresh current tab data
+  const fetchData = async (isSilent = false) => {
+    if (activeTab === "booking" || activeTab === "schedules") {
+      await fetchClasses(isSilent);
     }
-  }, [user, isAuthenticated]);
+    if (activeTab === "booking" && isMember) {
+      await fetchMemberBookings(isSilent);
+    }
+    if (activeTab === "my-logs") {
+      await fetchMemberBookings(isSilent);
+    }
+    if (activeTab === "all-bookings") {
+      await fetchAllBookings(isSilent);
+    }
+  };
+
+  // Load data specific to the active tab
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    if (activeTab === "booking") {
+      fetchClasses();
+      if (isMember) fetchMemberBookings();
+    } else if (activeTab === "my-logs") {
+      fetchMemberBookings();
+    } else if (activeTab === "check-in") {
+      fetchMembersForStaff();
+    } else if (activeTab === "schedules") {
+      fetchClasses();
+    } else if (activeTab === "all-bookings") {
+      fetchAllBookings();
+    }
+  }, [activeTab, user, isAuthenticated]);
 
 
   // Helper trigger messages
@@ -208,12 +247,9 @@ export const AttendancePage: React.FC = () => {
   const handleApproveGateCheckIn = async () => {
     if (!selectedMember) return;
     try {
-      // We simulate logging a workout or checking in under this member's profile
-      await memberApi.logWorkout({
-        title: `Gate Entrance Approved (${checkInStatus})`,
-        duration: 90,
-        exercises: [],
-        notes: `Manual front-desk approval at ${new Date().toLocaleTimeString()}`,
+      await memberApi.markAttendance({
+        memberId: selectedMember._id,
+        status: checkInStatus as "PRESENT" | "LATE",
         date: new Date().toISOString()
       });
       showSuccess(`Approved Gate Check-In for ${selectedMember.fullName}!`);

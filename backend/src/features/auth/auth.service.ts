@@ -44,7 +44,7 @@ export class AuthService {
       });
       await gym.save();
       
-      user.gymId = gym._id as any;
+      user.gymId = gym._id as unknown as typeof user.gymId;
       await user.save();
     }
 
@@ -127,7 +127,7 @@ export class AuthService {
 
   async refresh(token: string) {
     try {
-      const decoded = jwt.verify(token, env.REFRESH_TOKEN_SECRET!) as any as { _id: string };
+      const decoded = jwt.verify(token, env.REFRESH_TOKEN_SECRET!) as { _id: string };
       
       let user = await this.authRepository.findUserById(decoded._id);
       let isMember = false;
@@ -207,7 +207,7 @@ export class AuthService {
 
   async setPassword(token: string, password: string) {
     try {
-      const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET!) as any as { _id: string, isMember: boolean };
+      const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET!) as { _id: string; isMember: boolean };
       
       if (decoded.isMember) {
         const member = await Member.findById(decoded._id);

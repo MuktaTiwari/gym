@@ -5,28 +5,27 @@ import { verifyJWT } from "../../middleware/auth.middleware";
 const router = Router();
 const gymController = new GymController();
 
-// All gym routes require authentication
-router.use(verifyJWT as any);
+router.use(verifyJWT);
 
 // ── Gym Profile ──────────────────────────────────────────────────────────────
-router.get("/profile", gymController.getProfile as any);
-router.patch("/profile", gymController.updateProfile as any);
-router.patch("/profile/logo", logoUpload.single("logo"), gymController.uploadLogo as any);
+router.get("/profile", gymController.getProfile);
+router.patch("/profile", gymController.updateProfile);
+router.patch("/profile/logo", logoUpload.single("logo"), gymController.uploadLogo);
 
 // ── Gym Settings (Theme / Branding) ─────────────────────────────────────────
-router.get("/settings", gymController.getSettings as any);
-router.patch("/settings", gymController.updateSettings as any);
-router.patch("/settings/branding", gymController.updateSettings as any);  // alias
+router.get("/settings", gymController.getSettings);
+router.patch("/settings", gymController.updateSettings);
+router.patch("/settings/branding", gymController.updateSettings);
 
 // ── Staff Management ─────────────────────────────────────────────────────────
-router.get("/staff", gymController.getStaff as any);
-router.post("/staff/invite", gymController.inviteStaff as any);
-router.delete("/staff/:staffId", gymController.removeStaff as any);
-router.patch("/staff/:staffId/role", gymController.changeStaffRole as any);
+router.get("/staff", gymController.getStaff);
+router.post("/staff/invite", gymController.inviteStaff);
+router.delete("/staff/:staffId", gymController.removeStaff);
+router.patch("/staff/:staffId/role", gymController.changeStaffRole);
 
 // ── Danger Zone ──────────────────────────────────────────────────────────────
-router.delete("/workspace", gymController.deactivateWorkspace as any);
-router.post("/reset-all-passwords", gymController.resetAllPasswords as any);
-router.get("/export", gymController.exportData as any);
+router.delete("/workspace", gymController.deactivateWorkspace);
+router.post("/reset-all-passwords", gymController.resetAllPasswords);
+router.get("/export", gymController.exportData);
 
 export default router;

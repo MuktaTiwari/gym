@@ -41,14 +41,24 @@ export const PaymentsPage: React.FC = () => {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isMemberPayModalOpen, setIsMemberPayModalOpen] = useState(false);
 
+  type PaymentMethod = "CASH" | "CREDIT_CARD" | "BANK_TRANSFER" | "STRIPE";
+  type PaymentStatus = "COMPLETED" | "PENDING" | "FAILED";
+
   // Form states - Record payment (Staff)
-  const [staffFormData, setStaffFormData] = useState({
+  const [staffFormData, setStaffFormData] = useState<{
+    memberSearch: string;
+    selectedMember: Record<string, string> | null;
+    planName: string;
+    amount: number;
+    method: PaymentMethod;
+    status: PaymentStatus;
+  }>({
     memberSearch: "",
-    selectedMember: null as any | null,
+    selectedMember: null,
     planName: "Basic Access Plan",
     amount: 19,
-    method: "CASH" as any,
-    status: "COMPLETED" as any
+    method: "CASH",
+    status: "COMPLETED",
   });
 
   // Form states - Buy/Renew plan (Member)
@@ -95,19 +105,11 @@ export const PaymentsPage: React.FC = () => {
     }
   };
 
-  // Setup Initial load & polling
+  // Load on mount
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchPayments();
     }
-  }, [user, isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    const timer = setInterval(() => {
-      fetchPayments(true);
-    }, 3000);
-    return () => clearInterval(timer);
   }, [user, isAuthenticated]);
 
   const showSuccess = (msg: string) => {

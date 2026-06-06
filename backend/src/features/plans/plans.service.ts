@@ -4,6 +4,7 @@ import { Member } from "../../models/member.model";
 import { Payment } from "../../models/payment.model";
 import { MembershipStatus } from "../../enums/membershipStatus.enum";
 import { ApiError } from "../../utils/ApiError";
+import { Types } from "mongoose";
 
 export class PlansService {
   private plansRepository: PlansRepository;
@@ -19,7 +20,7 @@ export class PlansService {
   async createPlan(planData: Partial<IPlan>, gymId: string) {
     return await this.plansRepository.createPlan({
       ...planData,
-      gymId: gymId as any,
+      gymId: new Types.ObjectId(gymId) as unknown as IPlan["gymId"],
     });
   }
 
@@ -49,7 +50,7 @@ export class PlansService {
       status: "COMPLETED",
     });
 
-    const totalRevenue = payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+    const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
     return {
       activeMembers,

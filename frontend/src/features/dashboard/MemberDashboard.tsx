@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -47,10 +47,12 @@ import type {
 export const MemberDashboard: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTabParam = searchParams.get("tab") as any;
-  const activeTab = activeTabParam || "overview";
+  const validTabs = ["overview","workouts","classes","attendance","trainer","payments","notifications","profile"] as const;
+  type TabName = typeof validTabs[number];
+  const rawTab = searchParams.get("tab") ?? "overview";
+  const activeTab: TabName = (validTabs as readonly string[]).includes(rawTab) ? rawTab as TabName : "overview";
   
-  const setActiveTab = (tab: string) => {
+  const setActiveTab = (tab: TabName) => {
     setSearchParams({ tab });
   };
 
@@ -98,69 +100,91 @@ export const MemberDashboard: React.FC = () => {
   const [passwordMessage, setPasswordMessage] = useState({ text: "", type: "" });
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  // Load all user data from backend
-  const loadData = async (showLoader = false) => {
+  // Track which tabs have already fetched their data so we don't re-fetch on revisit
+  const loadedTabsRef = useRef<Set<string>>(new Set());
+
+  // Initialize profile form from the auth store (no API call needed)
+  const initProfileForm = useCallback((mp: any) => {
+    setProfile(mp);
+    setProfileName(mp.fullName || user?.name || "");
+    setProfilePhone(mp.phone || "");
+    setProfileAge(mp.age || 25);
+    setProfileWeight(mp.weight || 70);
+    setProfileHeight(mp.height || 175);
+    setProfileGender(mp.gender || "Unspecified");
+    setEmergencyName(mp.emergencyContact?.name || "");
+    setEmergencyRelation(mp.emergencyContact?.relation || "");
+    setEmergencyPhone(mp.emergencyContact?.phone || "");
+  }, [user]);
+
+  // Load data only for the given tab; skip if already loaded
+  const loadTabData = useCallback(async (tab: string, force = false) => {
     if (!isAuthenticated || !user) return;
+    if (!force && loadedTabsRef.current.has(tab)) return;
     try {
-      if (showLoader) setIsLoading(true);
-      const [
-        fetchedWorkouts,
-        fetchedBookings,
-        fetchedPayments,
-        fetchedClasses,
-        fetchedMyTrainer,
-        fetchedAllTrainers,
-        fetchedChangeRequests,
-        fetchedAttendance,
-        fetchedNotifications
-      ] = await Promise.all([
-        memberApi.getWorkouts().catch(() => []),
-        memberApi.getBookings().catch(() => []),
-        memberApi.getPayments().catch(() => []),
-        memberApi.getClassSchedules().catch(() => []),
-        memberApi.getMyTrainer().catch(() => null),
-        memberApi.getTrainers().catch(() => []),
-        memberApi.getTrainerChangeRequests().catch(() => []),
-        memberApi.getMyAttendance().catch(() => []),
-        memberApi.getMyNotifications().catch(() => [])
-      ]);
-
-      setWorkouts(fetchedWorkouts);
-      setBookings(fetchedBookings);
-      setPayments(fetchedPayments);
-      setClasses(fetchedClasses);
-      setAssignedTrainer(fetchedMyTrainer);
-      setTrainers(fetchedAllTrainers);
-      setChangeRequests(fetchedChangeRequests);
-      setAttendance(fetchedAttendance);
-      setNotifications(fetchedNotifications);
-
-      // Initialize profile state from user store
-      if (user?.memberProfile) {
-        const mp = user.memberProfile;
-        setProfile(mp);
-        setProfileName(mp.fullName || user.name || "");
-        setProfilePhone(mp.phone || "");
-        setProfileAge(mp.age || 25);
-        setProfileWeight(mp.weight || 70);
-        setProfileHeight(mp.height || 175);
-        setProfileGender(mp.gender || "Unspecified");
-        setEmergencyName(mp.emergencyContact?.name || "");
-        setEmergencyRelation(mp.emergencyContact?.relation || "");
-        setEmergencyPhone(mp.emergencyContact?.phone || "");
+      if (tab === "overview") {
+        setIsLoading(true);
+        const [fetchedWorkouts, fetchedBookings, fetchedAttendance, fetchedMyTrainer] = await Promise.all([
+          memberApi.getWorkouts().catch(() => []),
+          memberApi.getBookings().catch(() => []),
+          memberApi.getMyAttendance().catch(() => []),
+          memberApi.getMyTrainer().catch(() => null),
+        ]);
+        setWorkouts(fetchedWorkouts);
+        setBookings(fetchedBookings);
+        setAttendance(fetchedAttendance);
+        setAssignedTrainer(fetchedMyTrainer);
+      } else if (tab === "workouts") {
+        const fetchedWorkouts = await memberApi.getWorkouts().catch(() => []);
+        setWorkouts(fetchedWorkouts);
+      } else if (tab === "classes") {
+        const [fetchedClasses, fetchedBookings] = await Promise.all([
+          memberApi.getClassSchedules().catch(() => []),
+          memberApi.getBookings().catch(() => []),
+        ]);
+        setClasses(fetchedClasses);
+        setBookings(fetchedBookings);
+      } else if (tab === "attendance") {
+        const fetchedAttendance = await memberApi.getMyAttendance().catch(() => []);
+        setAttendance(fetchedAttendance);
+      } else if (tab === "trainer") {
+        const [fetchedMyTrainer, fetchedAllTrainers, fetchedChangeRequests] = await Promise.all([
+          memberApi.getMyTrainer().catch(() => null),
+          memberApi.getTrainers().catch(() => []),
+          memberApi.getTrainerChangeRequests().catch(() => []),
+        ]);
+        setAssignedTrainer(fetchedMyTrainer);
+        setTrainers(fetchedAllTrainers);
+        setChangeRequests(fetchedChangeRequests);
+      } else if (tab === "payments") {
+        const fetchedPayments = await memberApi.getPayments().catch(() => []);
+        setPayments(fetchedPayments);
+      } else if (tab === "notifications") {
+        const fetchedNotifications = await memberApi.getMyNotifications().catch(() => []);
+        setNotifications(fetchedNotifications);
       }
+      loadedTabsRef.current.add(tab);
     } catch (err) {
-      console.error("Error loading dashboard data", err);
+      console.error(`Error loading data for tab "${tab}"`, err);
     } finally {
-      if (showLoader) setIsLoading(false);
+      setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
 
+  // On login / user change: init profile form + load initial tab
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    if (user.memberProfile) initProfileForm(user.memberProfile);
+    loadedTabsRef.current.clear(); // reset cache when user changes
+    loadTabData(activeTab, true);
+  }, [user, isAuthenticated]);
+
+  // On tab change: load that tab's data if not yet loaded
   useEffect(() => {
     if (isAuthenticated && user) {
-      loadData(true);
+      loadTabData(activeTab);
     }
-  }, [user, isAuthenticated]);
+  }, [activeTab]);
 
   // Handle Log Workout
   const handleAddExerciseRow = () => {
@@ -198,8 +222,9 @@ export const MemberDashboard: React.FC = () => {
       setWorkoutDuration(45);
       setWorkoutNotes("");
       setExercises([{ name: "", sets: 3, reps: 10 }]);
-      const workouts = await memberApi.getWorkouts().catch(() => []);
-      setWorkouts(workouts);
+      loadedTabsRef.current.delete("workouts");
+      loadedTabsRef.current.delete("overview");
+      await loadTabData(activeTab, true);
     } catch (err) {
       console.error("Error saving workout", err);
     }
@@ -215,14 +240,12 @@ export const MemberDashboard: React.FC = () => {
         time,
         date: new Date().toISOString()
       });
-      const [newBookings, fetchedClasses] = await Promise.all([
-        memberApi.getBookings().catch(() => []),
-        memberApi.getClassSchedules().catch(() => [])
-      ]);
-      setBookings(newBookings);
-      setClasses(fetchedClasses);
+      loadedTabsRef.current.delete("classes");
+      loadedTabsRef.current.delete("overview");
+      await loadTabData(activeTab, true);
     } catch (err) {
-      alert("Error booking class: " + ((err as any).response?.data?.message || (err as any).message));
+      const msg = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? err.message : "Booking failed";
+      alert("Error booking class: " + msg);
     }
   };
 
@@ -231,12 +254,9 @@ export const MemberDashboard: React.FC = () => {
     if (!confirm("Are you sure you want to cancel this class booking?")) return;
     try {
       await memberApi.cancelBooking(bookingId);
-      const [newBookings, fetchedClasses] = await Promise.all([
-        memberApi.getBookings().catch(() => []),
-        memberApi.getClassSchedules().catch(() => [])
-      ]);
-      setBookings(newBookings);
-      setClasses(fetchedClasses);
+      loadedTabsRef.current.delete("classes");
+      loadedTabsRef.current.delete("overview");
+      await loadTabData(activeTab, true);
     } catch (err) {
       console.error("Error cancelling booking", err);
     }
@@ -253,8 +273,8 @@ export const MemberDashboard: React.FC = () => {
         date: new Date().toISOString()
       });
       alert("Simulated Stripe transaction was successful!");
-      const paymentsList = await memberApi.getPayments().catch(() => []);
-      setPayments(paymentsList);
+      loadedTabsRef.current.delete("payments");
+      await loadTabData("payments", true);
     } catch (err) {
       console.error("Error renewing membership", err);
     }
@@ -304,8 +324,8 @@ export const MemberDashboard: React.FC = () => {
       alert("Trainer reassignment request submitted to administrators!");
       setRequestReason("");
       setRequestedTrainerId("");
-      const requests = await memberApi.getTrainerChangeRequests().catch(() => []);
-      setChangeRequests(requests);
+      loadedTabsRef.current.delete("trainer");
+      await loadTabData("trainer", true);
     } catch (err) {
       console.error("Error requesting trainer change", err);
     } finally {
@@ -317,8 +337,8 @@ export const MemberDashboard: React.FC = () => {
   const handleMarkNotificationRead = async (notifId: string) => {
     try {
       await memberApi.markNotificationRead(notifId);
-      const notifs = await memberApi.getMyNotifications().catch(() => []);
-      setNotifications(notifs);
+      loadedTabsRef.current.delete("notifications");
+      await loadTabData("notifications", true);
     } catch (err) {
       console.error("Error marking notification read", err);
     }
@@ -344,10 +364,8 @@ export const MemberDashboard: React.FC = () => {
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      setPasswordMessage({
-        text: (err as any).response?.data?.message || "Failed to update password",
-        type: "error"
-      });
+      const msg = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? err.message : "Failed to update password";
+      setPasswordMessage({ text: msg, type: "error" });
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -1067,7 +1085,7 @@ Thank you for your business and staying fit!
                               {new Date(att.date).toLocaleDateString()} {new Date(att.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td className="px-6 py-4 text-foreground font-bold">
-                              {att.classId ? (att.classId as any).className : "General Open Gym Check-in"}
+                              {att.classId ? (att.classId as { className?: string }).className ?? "Unknown Class" : "General Open Gym Check-in"}
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border uppercase ${

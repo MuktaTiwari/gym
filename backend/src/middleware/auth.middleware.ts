@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { ApiError } from "../utils/ApiError";
@@ -11,9 +11,15 @@ export interface AuthRequest extends Request {
   };
 }
 
-const parseCookies = (cookieHeader?: string) => {
+interface JwtPayload {
+  _id: string;
+  role: string;
+  gymId?: string;
+}
+
+const parseCookies = (cookieHeader?: string): Record<string, string> => {
   if (!cookieHeader) return {};
-  return cookieHeader.split(";").reduce((res: Record<string, string>, item) => {
+  return cookieHeader.split(";").reduce<Record<string, string>>((res, item) => {
     const parts = item.split("=");
     const key = parts[0].trim();
     const val = parts.slice(1).join("=").trim();
@@ -22,7 +28,7 @@ const parseCookies = (cookieHeader?: string) => {
   }, {});
 };
 
-export const verifyJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const verifyJWT: RequestHandler = (req, _res, next) => {
   try {
     const cookies = parseCookies(req.headers.cookie);
     const token = cookies.accessToken || req.header("Authorization")?.replace("Bearer ", "");
@@ -31,22 +37,18 @@ export const verifyJWT = (req: AuthRequest, res: Response, next: NextFunction) =
       throw new ApiError(401, "Unauthorized: Access token is missing");
     }
 
-    const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET!) as any as {
-      _id: string;
-      role: string;
-      gymId?: string;
-    };
-
-    req.user = decoded;
+    const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET!) as JwtPayload;
+    (req as AuthRequest).user = decoded;
     next();
-  } catch (error) {
+  } catch {
     next(new ApiError(401, "Unauthorized: Invalid access token"));
   }
 };
 
-export const restrictTo = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+export const restrictTo = (roles: string[]): RequestHandler => {
+  return (req, _res, next) => {
+    const authReq = req as AuthRequest;
+    if (!authReq.user || !roles.includes(authReq.user.role)) {
       return next(new ApiError(403, "Forbidden: You do not have permission to perform this action"));
     }
     next();

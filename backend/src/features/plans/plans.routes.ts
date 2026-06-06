@@ -5,13 +5,12 @@ import { verifyJWT } from "../../middleware/auth.middleware";
 const router = Router();
 const plansController = new PlansController();
 
-// All plan routes require authentication
-router.use(verifyJWT as any);
+router.use(verifyJWT);
 
-router.get("/", plansController.getPlans as any);
-router.post("/", plansController.createPlan as any);
-router.get("/:id/stats", plansController.getPlanStats as any);
-router.put("/:id", plansController.updatePlan as any);
-router.delete("/:id", plansController.deletePlan as any);
+router.get("/", plansController.getPlans);
+router.post("/", plansController.createPlan);
+router.get("/:id/stats", plansController.getPlanStats);
+router.put("/:id", plansController.updatePlan);
+router.delete("/:id", plansController.deletePlan);
 
 export default router;

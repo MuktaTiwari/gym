@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
@@ -21,9 +21,9 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (file.mimetype.startsWith("image/")) cb(null, true);
-  else cb(new ApiError(400, "Only image files are allowed") as any);
+  else cb(new Error("Only image files are allowed"));
 };
 
 export const logoUpload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });

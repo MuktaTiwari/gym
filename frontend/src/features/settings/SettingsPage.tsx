@@ -33,21 +33,33 @@ export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("profile");
   const queryClient = useQueryClient();
 
-  // ────── Queries ──────
+  // ────── Queries (lazy — only load when the relevant tab is active) ──────
   const {
     data: profile,
     isLoading: profileLoading,
-  } = useQuery({ queryKey: ["gymProfile"], queryFn: gymApi.getProfile });
+  } = useQuery({
+    queryKey: ["gymProfile"],
+    queryFn: gymApi.getProfile,
+    enabled: activeTab === "profile",
+  });
 
   const {
     data: settings,
     isLoading: settingsLoading,
-  } = useQuery({ queryKey: ["gymSettings"], queryFn: gymApi.getSettings });
+  } = useQuery({
+    queryKey: ["gymSettings"],
+    queryFn: gymApi.getSettings,
+    enabled: activeTab === "theme",
+  });
 
   const {
     data: staff,
     isLoading: staffLoading,
-  } = useQuery({ queryKey: ["gymStaff"], queryFn: gymApi.getStaff });
+  } = useQuery({
+    queryKey: ["gymStaff"],
+    queryFn: gymApi.getStaff,
+    enabled: activeTab === "staff",
+  });
 
   // ────── Local Form State ──────
   const [gymName, setGymName] = useState("");
@@ -131,7 +143,8 @@ export const SettingsPage: React.FC = () => {
 
   const handleSettingsSave = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedTheme = (document.querySelector('input[name="theme"]:checked') as HTMLInputElement)?.value as any;
+    const checkedInput = document.querySelector<HTMLInputElement>('input[name="theme"]:checked');
+    const selectedTheme = checkedInput?.value as GymSettings["theme"] | undefined;
     const payload: Partial<GymSettings> = { theme: selectedTheme };
     updateSettingsMutation.mutate(payload);
   };

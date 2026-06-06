@@ -83,7 +83,7 @@ export class MembersService {
       fullName: name,
       email: emailLower,
       password: plainPassword,
-      gymId: gymId as any,
+      gymId: gymId as unknown as import("mongoose").Types.ObjectId,
       status: status || MembershipStatus.ACTIVE,
       planId: planId || undefined,
       membershipStartDate: joinDate || new Date(),
@@ -491,11 +491,12 @@ export class MembersService {
     return payment;
   }
 
-  async getActivityLogs(gymId: string) {
+  async getActivityLogs(gymId: string, limit = 50, skip = 0) {
     return await ActivityLog.find({ gymId })
       .populate({ path: "memberId", select: "fullName email memberId profilePhoto" })
       .sort({ timestamp: -1 })
-      .limit(50);
+      .skip(skip)
+      .limit(limit);
   }
 
   // Admin update member profiles
@@ -531,8 +532,9 @@ export class MembersService {
         if (trn) {
           member.assignedTrainer = trn.fullName;
           // Add member to trainer's assigned list
-          if (!trn.assignedMembers.includes(member._id as any)) {
-            trn.assignedMembers.push(member._id as any);
+          const memberObjId = member._id as unknown as (typeof trn.assignedMembers)[number];
+          if (!trn.assignedMembers.includes(memberObjId)) {
+            trn.assignedMembers.push(memberObjId);
             await trn.save();
           }
           // Notify member
@@ -584,7 +586,7 @@ export class MembersService {
       recipientType,
       message,
       type,
-      triggeredBy: triggeredBy ? triggeredBy as any : undefined,
+      triggeredBy: triggeredBy ?? undefined,
       gymId,
       isRead: false
     });
@@ -724,7 +726,7 @@ export class MembersService {
         targetTrainer.assignedMembers.push(member._id);
         await targetTrainer.save();
 
-        member.assignedTrainerId = targetTrainer._id as any;
+        member.assignedTrainerId = targetTrainer._id as unknown as typeof member.assignedTrainerId;
         member.assignedTrainer = targetTrainer.fullName;
         await member.save();
 
@@ -782,7 +784,7 @@ export class MembersService {
 
     if (existing) {
       existing.status = attendanceData.status;
-      existing.markedBy = adminId as any;
+      existing.markedBy = adminId as unknown as typeof existing.markedBy;
       await existing.save();
 
       // Log & Notify
@@ -813,7 +815,7 @@ export class MembersService {
       classId: attendanceData.classId || undefined,
       date: attendanceData.date || new Date(),
       status: attendanceData.status || "PRESENT",
-      markedBy: adminId as any,
+      markedBy: adminId,
       gymId,
     });
 
@@ -860,21 +862,19 @@ export class MembersService {
   }
 
   async createAnnouncement(gymId: string, announcementData: any, adminId: string) {
-    // Notify all members of this gym
-    const members = await Member.find({ gymId });
-    const notifications = [];
-    for (const m of members) {
-      const notif = await this.createNotificationHelper(
-        gymId,
-        String(m._id),
-        "MEMBER",
-        announcementData.message,
-        "ANNOUNCEMENT",
-        adminId
-      );
-      notifications.push(notif);
-    }
-    return { success: true, count: notifications.length };
+    const members = await Member.find({ gymId }, { _id: 1 }).lean();
+    const docs = members.map((m) => ({
+      notificationId: "NOT-" + Math.floor(100000 + Math.random() * 900000),
+      recipientId: String(m._id),
+      recipientType: "MEMBER",
+      message: announcementData.message,
+      type: "ANNOUNCEMENT",
+      triggeredBy: adminId,
+      gymId,
+      isRead: false,
+    }));
+    await Notification.insertMany(docs);
+    return { success: true, count: docs.length };
   }
 
   // Secure Password Change

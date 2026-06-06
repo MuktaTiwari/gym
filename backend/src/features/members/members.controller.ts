@@ -48,10 +48,10 @@ export class MembersController {
     if (!req.user?.gymId) {
       throw new ApiError(403, "Forbidden: Only Gym staff can create members");
     }
-    
-    const allowedRoles = [Role.GYM_OWNER, Role.GYM_ADMIN, Role.TRAINER];
+
+    const allowedRoles = [Role.GYM_OWNER, Role.GYM_ADMIN];
     if (!allowedRoles.includes(req.user.role as Role)) {
-      throw new ApiError(403, "Forbidden: Insufficient privileges");
+      throw new ApiError(403, "Forbidden: Only admins can create members");
     }
 
     const { name, email } = req.body;
@@ -217,7 +217,9 @@ export class MembersController {
     if (!req.user?.gymId) {
       throw new ApiError(401, "Unauthorized");
     }
-    const logs = await this.membersService.getActivityLogs(req.user.gymId);
+    const limit = req.query.limit ? Math.min(parseInt(req.query.limit as string), 200) : 50;
+    const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
+    const logs = await this.membersService.getActivityLogs(req.user.gymId, limit, skip);
     return res.status(200).json(new ApiResponse(200, logs, "Activity logs retrieved successfully"));
   });
 

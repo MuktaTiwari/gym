@@ -10,6 +10,8 @@ import mongoose from "mongoose";
 import archiver from "archiver";
 import { PassThrough } from "node:stream";
 import bcrypt from "bcrypt";
+import crypto from "node:crypto";
+import { sendEmail } from "../../utils/email";
 
 export class GymService {
   // ─── GYM PROFILE ──────────────────────────────────────────────────────────
@@ -76,9 +78,9 @@ export class GymService {
       throw new ApiError(400, "Role must be GYM_ADMIN or TRAINER");
     }
 
-    // Create a pending staff user with a temporary password
-    const tempPassword = Math.random().toString(36).slice(-10);
-    const hashed = await bcrypt.hash(tempPassword, 10);
+    // Create a pending staff user with a cryptographically secure temporary password
+    const tempPassword = crypto.randomBytes(10).toString("hex");
+    const hashed = await bcrypt.hash(tempPassword, 12);
 
     const newUser = await User.create({
       name: email.split("@")[0],
@@ -88,11 +90,16 @@ export class GymService {
       gymId: new mongoose.Types.ObjectId(gymId),
     });
 
-    // In production, send invitation email here with nodemailer
-    // For now, return the temp password in the response (dev only)
+    // Send invitation email with temp password — never return it in the response
+    await sendEmail({
+      to: email.toLowerCase(),
+      subject: "FitCore – Your Staff Account Has Been Created",
+      text: `Hello ${newUser.name},\n\nAn account has been created for you at FitCore.\n\nEmail: ${email}\nTemporary Password: ${tempPassword}\n\nPlease log in and change your password immediately.\n\nInvited by: ${inviterName}`,
+      html: `<p>Hello <strong>${newUser.name}</strong>,</p><p>An account has been created for you at FitCore.</p><p>Email: <strong>${email}</strong><br/>Temporary Password: <strong>${tempPassword}</strong></p><p>Please log in and change your password immediately.</p><p>Invited by: ${inviterName}</p>`,
+    });
+
     return {
       user: { _id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role },
-      tempPassword, // Remove in production once email is wired
     };
   }
 

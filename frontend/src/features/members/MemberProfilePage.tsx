@@ -24,6 +24,26 @@ import { axiosInstance } from "../../lib/axios";
 
 type TabType = "overview" | "payments" | "bookings" | "attendance" | "notes";
 
+// ─── Status badge helpers (extracted to avoid nested ternaries) ──────────────
+
+function getPaymentStatusClass(status: string): string {
+  if (status === "COMPLETED") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (status === "FAILED") return "bg-destructive/10 text-destructive border-destructive/20";
+  return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+}
+
+function getAttendanceStatusClass(status: string): string {
+  if (status === "PRESENT") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (status === "LATE") return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+  return "bg-destructive/10 text-destructive border-destructive/20";
+}
+
+function getBookingStatusClass(status: string): string {
+  if (status === "ATTENDED") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (status === "CANCELLED") return "bg-destructive/10 text-destructive border-destructive/20";
+  return "bg-primary/10 text-primary border-primary/20";
+}
+
 export const MemberProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -43,34 +63,34 @@ export const MemberProfilePage: React.FC = () => {
   });
   const member = memberData || null;
 
-  // Fetch payments
+  // Fetch payments — only when the payments tab is active
   const { data: payments = [], isLoading: isLoadingPayments } = useQuery({
     queryKey: ["memberPayments", id],
     queryFn: async () => {
       const response = await axiosInstance.get(`/members/${id}/payments`);
       return response.data.data || [];
     },
-    enabled: !!id,
+    enabled: !!id && activeTab === "payments",
   });
 
-  // Fetch bookings
+  // Fetch bookings — only when the bookings tab is active
   const { data: bookings = [], isLoading: isLoadingBookings } = useQuery({
     queryKey: ["memberBookings", id],
     queryFn: async () => {
       const response = await axiosInstance.get(`/members/${id}/bookings`);
       return response.data.data || [];
     },
-    enabled: !!id,
+    enabled: !!id && activeTab === "bookings",
   });
 
-  // Fetch attendance
+  // Fetch attendance — only when the attendance tab is active
   const { data: attendanceList = [], isLoading: isLoadingAttendance } = useQuery({
     queryKey: ["memberAttendance", id],
     queryFn: async () => {
       const response = await axiosInstance.get(`/members/${id}/attendance`);
       return response.data.data || [];
     },
-    enabled: !!id,
+    enabled: !!id && activeTab === "attendance",
   });
 
   if (isLoadingMember) {
@@ -91,7 +111,6 @@ export const MemberProfilePage: React.FC = () => {
   }
 
   const name = member.fullName || member.name || "Unknown Member";
-  const role = member.role || "MEMBER";
   const email = member.email || "No Email";
   const phone = member.phone || "N/A";
   const joinDate = member.membershipStartDate || member.joinDate || member.createdAt;
@@ -324,10 +343,7 @@ export const MemberProfilePage: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                   <p className="font-black text-foreground">${p.amount}</p>
-                                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${p.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                    p.status === "FAILED" ? "bg-destructive/10 text-destructive border-destructive/20" :
-                                      "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                    }`}>
+                                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${getPaymentStatusClass(p.status)}`}>
                                     {p.status}
                                   </span>
                                 </div>
@@ -390,10 +406,7 @@ export const MemberProfilePage: React.FC = () => {
                                   {new Date(a.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
                                 </span>
                               </div>
-                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold border ${a.status === "PRESENT" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                a.status === "LATE" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                                  "bg-destructive/10 text-destructive border-destructive/20"
-                                }`}>
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold border ${getAttendanceStatusClass(a.status)}`}>
                                 {a.status === "PRESENT" ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                                 {a.status}
                               </span>
@@ -428,10 +441,7 @@ export const MemberProfilePage: React.FC = () => {
                                 {new Date(b.date).toLocaleDateString()} @ {b.time} • Trainer: {b.trainerName}
                               </p>
                             </div>
-                            <span className={`inline-block px-3 py-1 rounded-md text-[11px] font-bold border ${b.status === "ATTENDED" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                              b.status === "CANCELLED" ? "bg-destructive/10 text-destructive border-destructive/20" :
-                                "bg-primary/10 text-primary border-primary/20"
-                              }`}>
+                            <span className={`inline-block px-3 py-1 rounded-md text-[11px] font-bold border ${getBookingStatusClass(b.status)}`}>
                               {b.status}
                             </span>
                           </div>
@@ -484,7 +494,7 @@ export const MemberProfilePage: React.FC = () => {
                       ) : (
                         <div className="divide-y divide-border/50 max-h-[500px] overflow-y-auto p-6 space-y-6 bg-surface-hover/10">
                           {notesList.map((note: any, index: number) => (
-                            <div key={index} className="bg-surface border border-border/50 rounded-2xl p-5 shadow-sm relative pt-4 mt-2">
+                            <div key={`${note.createdAt ?? ""}-${index}`} className="bg-surface border border-border/50 rounded-2xl p-5 shadow-sm relative pt-4 mt-2">
                               <div className="flex justify-between items-center mb-3">
                                 <span className="flex items-center gap-1.5 text-xs font-bold uppercase text-primary">
                                   <User className="h-3.5 w-3.5" /> {note.author || "Admin"}

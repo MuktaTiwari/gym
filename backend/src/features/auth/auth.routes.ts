@@ -5,14 +5,13 @@ import { registerSchema, loginSchema } from "./auth.schema";
 import { verifyJWT } from "../../middleware/auth.middleware";
 
 const router = Router();
+const authController = new AuthController();
 
-const authcontroller =  new AuthController();
-
-router.post("/register", validate(registerSchema), authcontroller.register);
-router.post("/login", validate(loginSchema), authcontroller.login);
-router.post("/refresh", authcontroller.refresh);
-router.post("/logout", verifyJWT as any, authcontroller.logout as any);
-router.get("/me", verifyJWT as any, authcontroller.getMe as any);
-router.post("/set-password", authcontroller.setPassword as any);
+router.post("/register", validate(registerSchema), authController.register);
+router.post("/login", validate(loginSchema), authController.login);
+router.post("/refresh", authController.refresh);
+router.post("/logout", verifyJWT, authController.logout);
+router.get("/me", verifyJWT, authController.getMe);
+router.post("/set-password", authController.setPassword);
 
 export default router;

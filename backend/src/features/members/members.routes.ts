@@ -5,68 +5,67 @@ import { verifyJWT } from "../../middleware/auth.middleware";
 const router = Router();
 const membersController = new MembersController();
 
-// All member routes are protected
-router.use(verifyJWT as any);
+router.use(verifyJWT);
 
 // Scoped athlete routes (must be placed before /:id parameter matching)
-router.put("/me/profile", membersController.updateMyProfile as any);
-router.get("/me/workouts", membersController.getMyWorkouts as any);
-router.post("/me/workouts", membersController.logMyWorkout as any);
-router.get("/me/bookings", membersController.getMyBookings as any);
-router.post("/me/bookings", membersController.bookMyClass as any);
-router.get("/me/payments", membersController.getMyPayments as any);
-router.post("/me/payments", membersController.recordMyPayment as any);
-router.get("/me/trainer", membersController.getMyTrainer as any);
-router.post("/me/trainer/request", membersController.requestTrainerChange as any);
-router.get("/me/attendance", membersController.getMyAttendance as any);
-router.get("/me/notifications", membersController.getMyNotifications as any);
-router.put("/me/notifications/:id/read", membersController.markNotificationRead as any);
-router.put("/me/change-password", membersController.changeMyPassword as any);
+router.put("/me/profile", membersController.updateMyProfile);
+router.get("/me/workouts", membersController.getMyWorkouts);
+router.post("/me/workouts", membersController.logMyWorkout);
+router.get("/me/bookings", membersController.getMyBookings);
+router.post("/me/bookings", membersController.bookMyClass);
+router.get("/me/payments", membersController.getMyPayments);
+router.post("/me/payments", membersController.recordMyPayment);
+router.get("/me/trainer", membersController.getMyTrainer);
+router.post("/me/trainer/request", membersController.requestTrainerChange);
+router.get("/me/attendance", membersController.getMyAttendance);
+router.get("/me/notifications", membersController.getMyNotifications);
+router.put("/me/notifications/:id/read", membersController.markNotificationRead);
+router.put("/me/change-password", membersController.changeMyPassword);
 
 // Dynamic Class Schedules
-router.get("/classes", membersController.getClassSchedules as any);
-router.post("/classes", membersController.createClassSchedule as any);
-router.put("/classes/:id", membersController.updateClassSchedule as any);
-router.delete("/classes/:id", membersController.deleteClassSchedule as any);
+router.get("/classes", membersController.getClassSchedules);
+router.post("/classes", membersController.createClassSchedule);
+router.put("/classes/:id", membersController.updateClassSchedule);
+router.delete("/classes/:id", membersController.deleteClassSchedule);
 
 // Booking actions
-router.get("/bookings", membersController.getAllBookings as any);
-router.post("/bookings/:id/cancel", membersController.cancelBooking as any);
+router.get("/bookings", membersController.getAllBookings);
+router.post("/bookings/:id/cancel", membersController.cancelBooking);
 
 // Global Transactions for admins
-router.get("/payments", membersController.getAllPayments as any);
-router.put("/payments/:id", membersController.updatePaymentStatus as any);
+router.get("/payments", membersController.getAllPayments);
+router.put("/payments/:id", membersController.updatePaymentStatus);
 
 // Trainers management (staff/admin)
-router.get("/trainers", membersController.getTrainers as any);
-router.post("/trainers", membersController.createTrainer as any);
-router.put("/trainers/:id", membersController.updateTrainer as any);
-router.delete("/trainers/:id", membersController.deleteTrainer as any);
+router.get("/trainers", membersController.getTrainers);
+router.post("/trainers", membersController.createTrainer);
+router.put("/trainers/:id", membersController.updateTrainer);
+router.delete("/trainers/:id", membersController.deleteTrainer);
 
 // Trainer requests (admin)
-router.get("/trainer-requests", membersController.getTrainerChangeRequests as any);
-router.put("/trainer-requests/:id", membersController.updateTrainerChangeRequest as any);
+router.get("/trainer-requests", membersController.getTrainerChangeRequests);
+router.put("/trainer-requests/:id", membersController.updateTrainerChangeRequest);
 
 // Attendance tracking
-router.post("/attendance", membersController.markAttendance as any);
-router.get("/:id/attendance", membersController.getMemberAttendance as any);
+router.post("/attendance", membersController.markAttendance);
+router.get("/:id/attendance", membersController.getMemberAttendance);
 
 // Announcements & Broadcasts
-router.post("/announcements", membersController.createAnnouncement as any);
+router.post("/announcements", membersController.createAnnouncement);
 
 // Live Activity Feed
-router.get("/activity/logs", membersController.getActivityLogs as any);
+router.get("/activity/logs", membersController.getActivityLogs);
 
-// Member statistics summary (placed before general /:id routes)
-router.get("/stats/summary", membersController.getStatsSummary as any);
+// Member statistics summary
+router.get("/stats/summary", membersController.getStatsSummary);
 
 // General member operations (for staff/admins)
-router.get("/", membersController.getMembers as any);
-router.post("/", membersController.createMember as any);
-router.get("/:id", membersController.getMember as any);
-router.put("/:id", membersController.updateMember as any);
-router.get("/:id/payments", membersController.getMemberPayments as any);
-router.get("/:id/bookings", membersController.getMemberBookings as any);
-router.post("/:id/notes", membersController.addMemberNote as any);
+router.get("/", membersController.getMembers);
+router.post("/", membersController.createMember);
+router.get("/:id", membersController.getMember);
+router.put("/:id", membersController.updateMember);
+router.get("/:id/payments", membersController.getMemberPayments);
+router.get("/:id/bookings", membersController.getMemberBookings);
+router.post("/:id/notes", membersController.addMemberNote);
 
 export default router;
